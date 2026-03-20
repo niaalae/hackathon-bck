@@ -1,7 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { loadEnv } from '@/env';
-import { existsSync, readFileSync } from 'fs';
-import { join } from 'path';
 import { randomInt } from 'crypto';
 
 type BookingSuggestion = {
@@ -427,41 +424,11 @@ export class HeroAgentService {
     return false;
   }
 
-  private loadGroqKeyFromFile(): string {
-    const candidates = [
-      join(process.cwd(), 'backend', '.env'),
-      join(process.cwd(), '.env'),
-      join(__dirname, '..', '..', '.env'),
-      join(__dirname, '..', '..', '..', '.env'),
-    ];
-
-    for (const filePath of candidates) {
-      if (!existsSync(filePath)) continue;
-      const contents = readFileSync(filePath, 'utf8');
-      const line = contents
-        .split('\n')
-        .find((entry) => entry.trim().startsWith('GROQ_API_KEY='));
-      if (!line) continue;
-      const raw = line.split('=')[1]?.trim() ?? '';
-      const cleaned = raw.replace(/^['"]|['"]$/g, '');
-      if (cleaned) return cleaned;
-    }
-
-    return '';
-  }
-
   async generateHeroReply(
     prompt: string,
     history?: HistoryMessage[],
   ): Promise<HeroAgentResponse> {
-    loadEnv()
-    let apiKey = this.apiKey
-    if (!apiKey) {
-      apiKey = this.loadGroqKeyFromFile()
-      if (apiKey) {
-        process.env.GROQ_API_KEY = apiKey
-      }
-    }
+
     const cleanPrompt = prompt.trim();
     const randomRequested = this.isRandomRequested(cleanPrompt);
     const finalPrompt = randomRequested
@@ -499,7 +466,7 @@ export class HeroAgentService {
       };
     }
 
-    if (!apiKey) {
+    if (!process.env.GROQ_API_KEY) {
       this.logger.warn('GROQ_API_KEY missing. Check backend/.env.');
       const inferredIntent = this.inferIntentFromPrompt(cleanPrompt);
       const bookings = this.shouldShowBookings(inferredIntent, cleanPrompt, randomRequested)
@@ -592,7 +559,7 @@ maxOutputTokens must handle full itinerary.`;
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${apiKey}`,
+          Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
         },
         body: JSON.stringify({
           model: this.model,

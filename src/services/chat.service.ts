@@ -1,7 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { loadEnv } from '@/env';
-import { existsSync, readFileSync } from 'fs';
-import { join } from 'path';
 
 type ChatMessage = {
     role: 'user' | 'assistant';
@@ -29,42 +26,11 @@ export class ChatService {
         'Never return JSON. Reply in plain text only.',
     ].join(' ');
 
-    private loadGroqKeyFromFile(): string {
-        const candidates = [
-            join(process.cwd(), 'backend', '.env'),
-            join(process.cwd(), '.env'),
-            join(__dirname, '..', '..', '.env'),
-            join(__dirname, '..', '..', '..', '.env'),
-        ];
-
-        for (const filePath of candidates) {
-            if (!existsSync(filePath)) continue;
-            const contents = readFileSync(filePath, 'utf8');
-            const line = contents
-                .split('\n')
-                .find((entry) => entry.trim().startsWith('GROQ_API_KEY='));
-            if (!line) continue;
-            const raw = line.split('=')[1]?.trim() ?? '';
-            const cleaned = raw.replace(/^['"]|['"]$/g, '');
-            if (cleaned) return cleaned;
-        }
-
-        return '';
-    }
-
     async chat(message: string, history: ChatMessage[]): Promise<string> {
-        loadEnv()
-        let apiKey = this.apiKey
-        if (!apiKey) {
-            apiKey = this.loadGroqKeyFromFile()
-            if (apiKey) {
-                process.env.GROQ_API_KEY = apiKey
-            }
-        }
         const trimmed = message.trim();
         if (!trimmed) return 'Please ask me something about your trip! 🧳';
 
-        if (!apiKey) {
+        if (!process.env.GROQ_API_KEY) {
             return 'The AI agent is not configured yet. Please add your Groq API key to .env 🔑';
         }
 
@@ -82,7 +48,7 @@ export class ChatService {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    Authorization: `Bearer ${apiKey}`,
+                    Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
                 },
                 body: JSON.stringify({
                     model: this.model,
