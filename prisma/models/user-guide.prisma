@@ -1,0 +1,85 @@
+enum UserRole {
+  TRAVELER
+  GUIDE
+  ADMIN
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  name         String
+  avatarUrl    String?  @map("avatar_url")
+  role         UserRole @default(TRAVELER)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  preferences  Json?
+
+  guideProfile Guide?
+  tripsOwned   Trip[]   @relation("TripOwner")
+  collabs      TripCollaborator[]
+  bookings     Booking[]
+  ratingsGiven Rating[]  @relation("RatingFromUser")
+  messagesSent Message[] @relation("MessageFromUser")
+  swipes       Swipe[]   @relation("SwipeFromUser")
+  matches      Match[]   @relation("MatchUser")
+
+  @@map("users")
+}
+
+model Guide {
+  id             String   @id @default(uuid())
+  userId         String   @unique @map("user_id")
+  headline       String?
+  bio            String?
+  rateHourly     Decimal? @map("rate_hourly") @db.Decimal(10, 2)
+  rateDaily      Decimal? @map("rate_daily") @db.Decimal(10, 2)
+  locationCityId String?  @map("location_city_id")
+  contactEmail   String?  @map("contact_email")
+  contactPhone   String?  @map("contact_phone")
+  verified       Boolean  @default(false)
+  ratingAvg      Decimal? @map("rating_avg") @db.Decimal(3, 2)
+  ratingCount    Int      @default(0) @map("rating_count")
+
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  locationCity City?     @relation("CityGuides", fields: [locationCityId], references: [id])
+  media        GuideMedia[]
+  pastTrips    GuidePastTrip[]
+  ratings      Rating[]
+  messages     Message[] @relation("MessageToGuide")
+  swipesTarget Swipe[]   @relation("SwipeToGuide")
+  matches      Match[]   @relation("MatchGuide")
+
+  @@map("guides")
+}
+
+model GuideMedia {
+  id       String   @id @default(uuid())
+  guideId  String   @map("guide_id")
+  type     MediaType
+  url      String
+  caption  String?
+  position Int      @default(0)
+
+  guide    Guide    @relation(fields: [guideId], references: [id], onDelete: Cascade)
+
+  @@index([guideId])
+  @@map("guide_media")
+}
+
+model GuidePastTrip {
+  id        String    @id @default(uuid())
+  guideId   String    @map("guide_id")
+  title     String
+  location  String
+  startDate DateTime? @map("start_date")
+  endDate   DateTime? @map("end_date")
+  summary   String?
+  mediaUrl  String?   @map("media_url")
+
+  guide     Guide     @relation(fields: [guideId], references: [id], onDelete: Cascade)
+
+  @@index([guideId])
+  @@map("guide_past_trips")
+}

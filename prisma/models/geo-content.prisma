@@ -1,0 +1,154 @@
+enum MediaType {
+  PHOTO
+  VIDEO
+}
+
+enum InfoScope {
+  REGION
+  CITY
+  ATTRACTION
+}
+
+model Region {
+  id          String   @id @default(uuid())
+  name        String
+  country     String
+  slug        String   @unique
+  description String?
+  coverImage  String?  @map("cover_image")
+
+  cities     City[]
+  infoBlocks InfoBlock[] @relation("RegionInfo")
+
+  @@map("regions")
+}
+
+model City {
+  id          String   @id @default(uuid())
+  regionId    String   @map("region_id")
+  name        String
+  slug        String   @unique
+  lat         Decimal? @db.Decimal(9, 6)
+  lng         Decimal? @db.Decimal(9, 6)
+  timezone    String?
+  description String?
+  coverImage  String?  @map("cover_image")
+
+  region      Region   @relation(fields: [regionId], references: [id], onDelete: Cascade)
+  attractions Attraction[]
+  guides      Guide[]  @relation("CityGuides")
+  trips       Trip[]
+  groups      Group[]
+  infoBlocks  InfoBlock[] @relation("CityInfo")
+
+  @@index([regionId])
+  @@map("cities")
+}
+
+model Group {
+  id        String   @id @default(uuid())
+  cityId    String   @map("city_id")
+  startDate DateTime @map("start_date")
+  endDate   DateTime @map("end_date")
+  capacity  Int
+  budgetMin Decimal  @map("budget_min") @db.Decimal(12, 2)
+  budgetMax Decimal  @map("budget_max") @db.Decimal(12, 2)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  city      City     @relation(fields: [cityId], references: [id], onDelete: Cascade)
+
+  @@index([cityId])
+  @@index([startDate])
+  @@index([endDate])
+  @@map("groups")
+}
+
+model Attraction {
+  id              String   @id @default(uuid())
+  cityId          String   @map("city_id")
+  name            String
+  slug            String   @unique
+  type            String?
+  lat             Decimal? @db.Decimal(9, 6)
+  lng             Decimal? @db.Decimal(9, 6)
+  description     String?
+  avgPrice        Decimal? @map("avg_price") @db.Decimal(10, 2)
+  durationMinutes Int?     @map("duration_minutes")
+  coverImage      String?  @map("cover_image")
+
+  city       City     @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  media      AttractionMedia[]
+  tags       AttractionTagMap[]
+  infoBlocks InfoBlock[] @relation("AttractionInfo")
+
+  @@index([cityId])
+  @@map("attractions")
+}
+
+model AttractionMedia {
+  id           String   @id @default(uuid())
+  attractionId String   @map("attraction_id")
+  type         MediaType
+  url          String
+  caption      String?
+  position     Int      @default(0)
+
+  attraction Attraction @relation(fields: [attractionId], references: [id], onDelete: Cascade)
+
+  @@index([attractionId])
+  @@map("attraction_media")
+}
+
+model Tag {
+  id   String @id @default(uuid())
+  name String @unique
+
+  attractions AttractionTagMap[]
+
+  @@map("tags")
+}
+
+model AttractionTagMap {
+  attractionId String @map("attraction_id")
+  tagId        String @map("tag_id")
+
+  attraction Attraction @relation(fields: [attractionId], references: [id], onDelete: Cascade)
+  tag        Tag        @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([attractionId, tagId])
+  @@map("attraction_tag_map")
+}
+
+model InfoBlock {
+  id           String    @id @default(uuid())
+  scope        InfoScope
+  regionId     String?   @map("region_id")
+  cityId       String?   @map("city_id")
+  attractionId String?   @map("attraction_id")
+  title        String
+  content      String
+  category     String?
+  language     String?   @default("en")
+
+  region     Region?     @relation("RegionInfo", fields: [regionId], references: [id], onDelete: Cascade)
+  city       City?       @relation("CityInfo", fields: [cityId], references: [id], onDelete: Cascade)
+  attraction Attraction? @relation("AttractionInfo", fields: [attractionId], references: [id], onDelete: Cascade)
+
+  @@index([regionId])
+  @@index([cityId])
+  @@index([attractionId])
+  @@map("info_blocks")
+}
+
+model Translation {
+  id         String @id @default(uuid())
+  entityType String @map("entity_type")
+  entityId   String @map("entity_id")
+  language   String
+  field      String
+  value      String
+
+  @@index([entityType, entityId])
+  @@map("translations")
+}
