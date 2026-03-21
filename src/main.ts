@@ -3,7 +3,7 @@ import { AppModule } from './app.module'
 import { ValidationPipe } from '@nestjs/common'
 import cookieParser from 'cookie-parser'
 import { NestExpressApplication } from '@nestjs/platform-express'
-// import { ApiExceptionFilter } from './common/filters/api-exception.filter'
+import { ApiExceptionFilter } from './common/filters/api-exception.filter'
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule)
@@ -32,7 +32,7 @@ async function bootstrap() {
       transform: true
     })
   )
-  // app.useGlobalFilters(new ApiExceptionFilter())
+  app.useGlobalFilters(new ApiExceptionFilter())
 
   await app.listen(process.env.PORT ?? 4001)
 }
