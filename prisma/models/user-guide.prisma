@@ -7,12 +7,12 @@ enum UserRole {
 model User {
   id           String   @id @default(uuid())
   email        String   @unique
-  passwordHash String   @map("password_hash")
+  passwordHash String
   name         String
-  avatarUrl    String?  @map("avatar_url")
+  avatarUrl    String?
   role         UserRole @default(TRAVELER)
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   preferences  Json?
 
@@ -24,23 +24,21 @@ model User {
   messagesSent Message[] @relation("MessageFromUser")
   swipes       Swipe[]   @relation("SwipeFromUser")
   matches      Match[]   @relation("MatchUser")
-
-  @@map("users")
 }
 
 model Guide {
   id             String   @id @default(uuid())
-  userId         String   @unique @map("user_id")
+  userId         String   @unique
   headline       String?
   bio            String?
-  rateHourly     Decimal? @map("rate_hourly") @db.Decimal(10, 2)
-  rateDaily      Decimal? @map("rate_daily") @db.Decimal(10, 2)
-  locationCityId String?  @map("location_city_id")
-  contactEmail   String?  @map("contact_email")
-  contactPhone   String?  @map("contact_phone")
+  rateHourly     Decimal? @db.Decimal(10, 2)
+  rateDaily      Decimal? @db.Decimal(10, 2)
+  locationCityId String?
+  contactEmail   String?
+  contactPhone   String?
   verified       Boolean  @default(false)
-  ratingAvg      Decimal? @map("rating_avg") @db.Decimal(3, 2)
-  ratingCount    Int      @default(0) @map("rating_count")
+  ratingAvg      Decimal? @db.Decimal(3, 2)
+  ratingCount    Int      @default(0)
 
   user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   locationCity City?     @relation("CityGuides", fields: [locationCityId], references: [id])
@@ -50,13 +48,11 @@ model Guide {
   messages     Message[] @relation("MessageToGuide")
   swipesTarget Swipe[]   @relation("SwipeToGuide")
   matches      Match[]   @relation("MatchGuide")
-
-  @@map("guides")
 }
 
 model GuideMedia {
   id       String   @id @default(uuid())
-  guideId  String   @map("guide_id")
+  guideId  String
   type     MediaType
   url      String
   caption  String?
@@ -65,21 +61,19 @@ model GuideMedia {
   guide    Guide    @relation(fields: [guideId], references: [id], onDelete: Cascade)
 
   @@index([guideId])
-  @@map("guide_media")
 }
 
 model GuidePastTrip {
   id        String    @id @default(uuid())
-  guideId   String    @map("guide_id")
+  guideId   String
   title     String
   location  String
-  startDate DateTime? @map("start_date")
-  endDate   DateTime? @map("end_date")
+  startDate DateTime?
+  endDate   DateTime?
   summary   String?
-  mediaUrl  String?   @map("media_url")
+  mediaUrl  String?
 
   guide     Guide     @relation(fields: [guideId], references: [id], onDelete: Cascade)
 
   @@index([guideId])
-  @@map("guide_past_trips")
 }

@@ -26,6 +26,7 @@
     "load:check": "tsx ./scripts/load-check.ts"
   },
   "dependencies": {
+    "@faker-js/faker": "^10.3.0",
     "@mapbox/polyline": "^1.2.1",
     "@nestjs/common": "^11.0.1",
     "@nestjs/core": "^11.0.1",
