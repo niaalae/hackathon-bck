@@ -49,7 +49,7 @@ export class AuthService {
     res.cookie('refreshtoken', refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'none',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       path: '/api/refresh',
       maxAge: 30 * 24 * 60 * 60 * 1000
     })
@@ -95,7 +95,7 @@ export class AuthService {
     res.clearCookie('refreshtoken', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'none',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       path: '/api/refresh'
     })
   }

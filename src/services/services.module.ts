@@ -12,6 +12,7 @@ import { HeroAgentService } from './hero-agent.service';
 import { ChatService } from './chat.service';
 import { BookingService } from './booking.service';
 import { GroupPublicService } from './group-public.service';
+import { GamificationService } from './gamification.service';
 
 const services = [
   UserService,
@@ -27,6 +28,7 @@ const services = [
   ChatService,
   BookingService,
   GroupPublicService,
+  GamificationService,
 ];
 
 @Module({
