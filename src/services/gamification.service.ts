@@ -80,8 +80,7 @@ export class GamificationService {
           .length,
         liveQuests: quests.filter((quest) => quest.status === 'in-progress').length,
         nextQuests: quests.filter((quest) => quest.status === 'up-next').length,
-        nextUnlock:
-          quests.find((quest) => quest.status !== 'completed')?.title ?? null,
+        nextUnlock: this.getNextUnlockLabel(quests),
       },
       quests,
       leaderboard,
@@ -460,6 +459,12 @@ export class GamificationService {
     return quests
       .filter((quest) => quest.status === 'completed')
       .reduce((sum, quest) => sum + quest.xp, 0);
+  }
+
+  private getNextUnlockLabel(quests: QuestDefinition[]) {
+    const nextQuest = quests.find((quest) => quest.status !== 'completed');
+    if (nextQuest) return nextQuest.title;
+    return 'All travel goals completed';
   }
 
   private getRankLabel(xp: number) {
