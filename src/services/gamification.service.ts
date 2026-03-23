@@ -1,13 +1,13 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '@/prisma/prisma.service';
-import { normalizeJsonInput } from '@/prisma/prisma-json.util';
-import type { GamificationEventType } from '@/public/dto/gamification/gamification-event-type';
-import { GAMIFICATION_EVENT_TYPES } from '@/public/dto/gamification/gamification-event-type';
-import { TrackGamificationEventDto } from '@/public/dto/gamification/track-gamification-event.dto';
-import { UpdateGamificationSettingsDto } from '@/public/dto/gamification/update-gamification-settings.dto';
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { PrismaService } from "@/prisma/prisma.service";
+import { normalizeJsonInput } from "@/prisma/prisma-json.util";
+import type { GamificationEventType } from "@/public/dto/gamification/gamification-event-type";
+import { GAMIFICATION_EVENT_TYPES } from "@/public/dto/gamification/gamification-event-type";
+import { TrackGamificationEventDto } from "@/public/dto/gamification/track-gamification-event.dto";
+import { UpdateGamificationSettingsDto } from "@/public/dto/gamification/update-gamification-settings.dto";
 
 type PreferencesRecord = Record<string, unknown>;
-type QuestStatus = 'completed' | 'in-progress' | 'up-next';
+type QuestStatus = "completed" | "in-progress" | "up-next";
 
 type EventCounters = Record<GamificationEventType, number>;
 
@@ -76,10 +76,11 @@ export class GamificationService {
         totalXp,
         rankLabel: this.getRankLabel(totalXp),
         streakDays: this.getStreakDays(user),
-        completedQuests: quests.filter((quest) => quest.status === 'completed')
+        completedQuests: quests.filter((quest) => quest.status === "completed")
           .length,
-        liveQuests: quests.filter((quest) => quest.status === 'in-progress').length,
-        nextQuests: quests.filter((quest) => quest.status === 'up-next').length,
+        liveQuests: quests.filter((quest) => quest.status === "in-progress")
+          .length,
+        nextQuests: quests.filter((quest) => quest.status === "up-next").length,
         nextUnlock: this.getNextUnlockLabel(quests),
       },
       quests,
@@ -94,19 +95,21 @@ export class GamificationService {
     };
   }
 
-  async updateSettings(
-    userId: string,
-    dto: UpdateGamificationSettingsDto,
-  ) {
+  async updateSettings(userId: string, dto: UpdateGamificationSettingsDto) {
     const user = await this.loadUserSettings(userId);
     const preferences = this.asRecord(user.preferences);
     const accountSettings = this.getAccountSettings(preferences);
+    const gamificationState = this.getGamificationState(preferences);
 
     const updatedPreferences = {
       ...preferences,
       accountSettings: {
         ...accountSettings,
         gamificationEnabled: dto.enabled,
+      },
+      gamification: {
+        ...gamificationState,
+        enabled: dto.enabled,
       },
     };
 
@@ -123,10 +126,7 @@ export class GamificationService {
     };
   }
 
-  async trackEvent(
-    userId: string,
-    dto: TrackGamificationEventDto,
-  ) {
+  async trackEvent(userId: string, dto: TrackGamificationEventDto) {
     const user = await this.loadUserSettings(userId);
     const preferences = this.asRecord(user.preferences);
     const gamificationState = this.getGamificationState(preferences);
@@ -173,7 +173,7 @@ export class GamificationService {
         preferences: true,
         createdAt: true,
         tripsOwned: {
-          orderBy: { createdAt: 'desc' },
+          orderBy: { createdAt: "desc" },
           select: {
             id: true,
             startDate: true,
@@ -189,7 +189,7 @@ export class GamificationService {
       },
     });
 
-    if (!user) throw new NotFoundException('User not found');
+    if (!user) throw new NotFoundException("User not found");
     return user;
   }
 
@@ -202,25 +202,22 @@ export class GamificationService {
       },
     });
 
-    if (!user) throw new NotFoundException('User not found');
+    if (!user) throw new NotFoundException("User not found");
     return user;
   }
 
-  private buildQuestContext(
-    preferencesValue: unknown,
-    trips: TripSnapshot[],
-  ) {
+  private buildQuestContext(preferencesValue: unknown, trips: TripSnapshot[]) {
     const preferences = this.asRecord(preferencesValue);
     const accountSettings = this.getAccountSettings(preferences);
     const latestTrip = trips[0];
     const homeCity =
-      typeof accountSettings.homeCity === 'string' &&
+      typeof accountSettings.homeCity === "string" &&
       accountSettings.homeCity.trim()
         ? accountSettings.homeCity.trim()
         : null;
 
     return {
-      city: latestTrip?.city?.name ?? homeCity ?? 'Fez',
+      city: latestTrip?.city?.name ?? homeCity ?? "Fez",
       durationDays: this.getDurationDays(latestTrip),
     };
   }
@@ -253,132 +250,140 @@ export class GamificationService {
     );
     const routeStatus: QuestStatus =
       routeProgress >= 100
-        ? 'completed'
+        ? "completed"
         : user.tripsOwned.length > 0
-          ? 'in-progress'
-          : 'up-next';
+          ? "in-progress"
+          : "up-next";
 
     const aiProgress = counters.AI_PROMPT_SENT
       ? 100
       : routeProgress >= 60
-        ? 15
+        ? 45
         : 0;
     const aiStatus: QuestStatus =
-      counters.AI_PROMPT_SENT > 0 ? 'completed' : 'up-next';
+      counters.AI_PROMPT_SENT > 0
+        ? "completed"
+        : routeProgress >= 60
+          ? "in-progress"
+          : "up-next";
 
     const localMatchProgress = likedSpotCount
       ? Math.min(100, Math.round((likedSpotCount / 3) * 100))
-      : aiStatus === 'completed'
+      : aiStatus === "completed"
         ? 15
         : 0;
     const localMatchStatus: QuestStatus =
       likedSpotCount >= 3
-        ? 'completed'
+        ? "completed"
         : likedSpotCount > 0
-          ? 'in-progress'
-          : 'up-next';
+          ? "in-progress"
+          : "up-next";
 
     const groupSignal =
       counters.GROUP_SCOUTED +
-      ('matches' in user && user.matches.length > 0 ? 1 : 0);
-    const groupProgress = groupSignal
-      ? 100
-      : localMatchProgress >= 34
-        ? 20
-        : 0;
+      ("matches" in user && user.matches.length > 0 ? 1 : 0);
+    const groupProgress = groupSignal ? 100 : localMatchProgress >= 34 ? 55 : 0;
     const groupStatus: QuestStatus =
-      groupSignal > 0 ? 'completed' : 'up-next';
+      groupSignal > 0
+        ? "completed"
+        : localMatchProgress >= 34
+          ? "in-progress"
+          : "up-next";
 
     const mapProgress = counters.MAP_PREVIEWED
       ? 100
       : routeProgress >= 60
-        ? 10
+        ? 35
         : 0;
     const mapStatus: QuestStatus =
-      counters.MAP_PREVIEWED > 0 ? 'completed' : 'up-next';
+      counters.MAP_PREVIEWED > 0
+        ? "completed"
+        : routeProgress >= 60
+          ? "in-progress"
+          : "up-next";
 
     return [
       {
-        id: 'route-board',
-        title: `Build your ${context.durationDays}-day ${context.city} route`,
+        id: "route-board",
+        title: `Lock in your ${context.durationDays}-day ${context.city} route`,
         description:
-          'Turn your trip idea into a concrete day-by-day route with stops, timing, and a city focus.',
+          "Your trip brief is already structured into a clear itinerary and ready for a final pass.",
         xp: 80,
         status: routeStatus,
         progress: routeProgress,
         progressLabel:
-          routeStatus === 'completed'
-            ? 'Route drafted'
+          routeStatus === "completed"
+            ? "Route drafted"
             : user.tripsOwned.length
-              ? 'Trip shell created'
-              : 'Create your first trip',
-        href: '/user/dashboard',
-        actionLabel: 'Review plan',
+              ? "Trip shell created"
+              : "Create your first trip",
+        href: "/user/trip-plan",
+        actionLabel: "Review route",
       },
       {
-        id: 'ai-concierge',
-        title: 'Ask the AI concierge',
+        id: "ai-concierge",
+        title: "Open your AI concierge",
         description:
-          'Send your first prompt to unlock smarter trip ideas and faster planning follow-ups.',
+          "Send your first prompt to unlock sharper suggestions and faster itinerary adjustments.",
         xp: 55,
         status: aiStatus,
         progress: aiProgress,
         progressLabel:
-          aiStatus === 'completed'
-            ? 'Prompt sent'
+          aiStatus === "completed"
+            ? "Prompt sent"
             : routeProgress >= 60
-              ? 'Ready for your first prompt'
-              : 'Start with your trip route',
-        href: '/user/ai',
-        actionLabel: 'Open AI',
+              ? "Ready for your first prompt"
+              : "Start with your trip route",
+        href: "/user/ai",
+        actionLabel: "Open AI",
       },
       {
-        id: 'local-match',
-        title: 'Match 3 local spots',
-        description: `Shortlist cafes, stays, and local addresses in ${context.city} that fit the vibe of the trip.`,
+        id: "local-match",
+        title: "Shortlist 3 local spots",
+        description: `Save a few standout cafes, stays, and local addresses to personalize your ${context.city} trip.`,
         xp: 70,
         status: localMatchStatus,
         progress: localMatchProgress,
         progressLabel:
           likedSpotCount > 0
             ? `${Math.min(likedSpotCount, 3)} / 3 spots shortlisted`
-            : 'Start swiping local spots',
-        href: '/user/match',
-        actionLabel: 'Open Match',
+            : "Start swiping local spots",
+        href: "/user/match",
+        actionLabel: "Open Match",
       },
       {
-        id: 'travel-crew',
-        title: 'Scout one travel group',
+        id: "travel-crew",
+        title: "Preview one travel group",
         description:
-          'Open a relevant group to check the vibe, timing, and social fit before joining.',
+          "Open a group card to compare the vibe, members, and timing before you join.",
         xp: 60,
         status: groupStatus,
         progress: groupProgress,
         progressLabel:
-          groupStatus === 'completed'
-            ? 'Group explored'
+          groupStatus === "completed"
+            ? "Group explored"
             : localMatchProgress >= 34
-              ? 'Recommended groups are ready'
-              : 'Unlock groups with local matches',
-        href: '/user/groups',
-        actionLabel: 'Open Groups',
+              ? "Recommended groups are ready"
+              : "Unlock groups with local matches",
+        href: "/user/groups",
+        actionLabel: "Open Groups",
       },
       {
-        id: 'map-preview',
-        title: 'Preview your route on the map',
+        id: "map-preview",
+        title: "View your route on the map",
         description:
-          'Connect the main stops on the map to make the itinerary feel real, clear, and navigable.',
+          "Connect your stops on the map to make the route clearer, more concrete, and easier to share.",
         xp: 40,
         status: mapStatus,
         progress: mapProgress,
         progressLabel:
-          mapStatus === 'completed'
-            ? 'Map preview opened'
+          mapStatus === "completed"
+            ? "Map preview opened"
             : routeProgress >= 60
-              ? 'Ready to unlock'
-              : 'Build your route first',
-        href: '/user/maps',
-        actionLabel: 'Open Maps',
+              ? "Ready to unlock"
+              : "Build your route first",
+        href: "/user/maps",
+        actionLabel: "Open Maps",
       },
     ];
   }
@@ -392,7 +397,7 @@ export class GamificationService {
         preferences: true,
         createdAt: true,
         tripsOwned: {
-          orderBy: { createdAt: 'desc' },
+          orderBy: { createdAt: "desc" },
           select: {
             id: true,
             startDate: true,
@@ -437,13 +442,24 @@ export class GamificationService {
       );
 
     const topThree = scored.slice(0, 3);
-    const alreadyVisible = topThree.some((entry) => entry.id === currentUser.id);
+    const alreadyVisible = topThree.some(
+      (entry) => entry.id === currentUser.id,
+    );
 
     if (alreadyVisible) {
-      return topThree.map(({ joinedAt, ...entry }) => entry);
+      return topThree.map((entry) => ({
+        id: entry.id,
+        name: entry.name,
+        label: entry.label,
+        xp: entry.xp,
+        isCurrentUser: entry.isCurrentUser,
+      }));
     }
 
-    const currentQuests = this.buildQuestDefinitions(currentUser, currentOverviewContext);
+    const currentQuests = this.buildQuestDefinitions(
+      currentUser,
+      currentOverviewContext,
+    );
     const currentEntry = {
       id: currentUser.id,
       name: currentUser.name,
@@ -452,26 +468,35 @@ export class GamificationService {
       isCurrentUser: true,
     };
 
-    return [...topThree.slice(0, 2).map(({ joinedAt, ...entry }) => entry), currentEntry];
+    return [
+      ...topThree.slice(0, 2).map((entry) => ({
+        id: entry.id,
+        name: entry.name,
+        label: entry.label,
+        xp: entry.xp,
+        isCurrentUser: entry.isCurrentUser,
+      })),
+      currentEntry,
+    ];
   }
 
   private getTotalXp(quests: QuestDefinition[]) {
     return quests
-      .filter((quest) => quest.status === 'completed')
+      .filter((quest) => quest.status === "completed")
       .reduce((sum, quest) => sum + quest.xp, 0);
   }
 
   private getNextUnlockLabel(quests: QuestDefinition[]) {
-    const nextQuest = quests.find((quest) => quest.status !== 'completed');
+    const nextQuest = quests.find((quest) => quest.status !== "completed");
     if (nextQuest) return nextQuest.title;
-    return 'All travel goals completed';
+    return "All travel goals completed";
   }
 
   private getRankLabel(xp: number) {
-    if (xp >= 220) return 'Route captain';
-    if (xp >= 150) return 'Local scout';
-    if (xp >= 80) return 'Explorer I';
-    return 'Trip starter';
+    if (xp >= 220) return "Route captain";
+    if (xp >= 150) return "Local scout";
+    if (xp >= 80) return "Explorer I";
+    return "Trip starter";
   }
 
   private getDurationDays(trip?: TripSnapshot) {
@@ -497,7 +522,9 @@ export class GamificationService {
     const days = new Set<string>(this.getActivityDates(preferences));
 
     user.tripsOwned.forEach((trip) => days.add(this.toDayKey(trip.createdAt)));
-    user.bookings.forEach((booking) => days.add(this.toDayKey(booking.createdAt)));
+    user.bookings.forEach((booking) =>
+      days.add(this.toDayKey(booking.createdAt)),
+    );
     user.matches.forEach((match) => days.add(this.toDayKey(match.createdAt)));
     user.swipes.forEach((swipe) => days.add(this.toDayKey(swipe.createdAt)));
 
@@ -520,7 +547,8 @@ export class GamificationService {
   private getLikedAttractions(preferences: PreferencesRecord) {
     return Array.isArray(preferences.likedAttractions)
       ? preferences.likedAttractions.filter(
-          (value): value is string => typeof value === 'string' && Boolean(value),
+          (value): value is string =>
+            typeof value === "string" && Boolean(value),
         )
       : [];
   }
@@ -530,11 +558,11 @@ export class GamificationService {
     const accountSettings = this.getAccountSettings(preferences);
     const gamification = this.getGamificationState(preferences);
 
-    if (typeof accountSettings.gamificationEnabled === 'boolean') {
+    if (typeof accountSettings.gamificationEnabled === "boolean") {
       return accountSettings.gamificationEnabled;
     }
 
-    if (typeof gamification.enabled === 'boolean') {
+    if (typeof gamification.enabled === "boolean") {
       return gamification.enabled;
     }
 
@@ -549,7 +577,7 @@ export class GamificationService {
     return GAMIFICATION_EVENT_TYPES.reduce((acc, type) => {
       const value = rawCounters[type];
       acc[type] =
-        typeof value === 'number' && Number.isFinite(value)
+        typeof value === "number" && Number.isFinite(value)
           ? Math.max(0, Math.floor(value))
           : 0;
       return acc;
@@ -562,7 +590,8 @@ export class GamificationService {
 
     return Array.isArray(gamification.activityDates)
       ? gamification.activityDates.filter(
-          (value): value is string => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value),
+          (value): value is string =>
+            typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value),
         )
       : [];
   }
@@ -581,7 +610,7 @@ export class GamificationService {
   }
 
   private asRecord(value: unknown): PreferencesRecord {
-    if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+    if (!value || typeof value !== "object" || Array.isArray(value)) return {};
     return value as PreferencesRecord;
   }
 

@@ -23,6 +23,7 @@
     "reset": "prisma migrate reset",
     "seed": "tsx ./prisma/seed.ts",
     "smoke:api": "tsx ./scripts/api-smoke.ts",
+    "smoke:gamification": "tsx ./scripts/gamification-smoke.ts",
     "load:check": "tsx ./scripts/load-check.ts"
   },
   "dependencies": {
