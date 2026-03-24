@@ -42,7 +42,7 @@ export class AuthService {
     const valid = await bcrypt.compare(loginDto.password, user.passwordHash)
     if (!valid) throw new UnauthorizedException({ password: 'wrong_password' })
 
-    const { passwordHash: passwd, id, ...userData } = user
+    const { passwordHash: passwd, ...userData } = user
 
     const refreshToken = this.jwtService.sign({ id: user.id }, { expiresIn: '30d', secret: process.env.JWT_REFRESH_SECRET })
 
@@ -79,7 +79,7 @@ export class AuthService {
 
       if (!user) throw new NotFoundException('user_not_found')
 
-      const { passwordHash: passwd, id, ...userData } = user
+      const { passwordHash: passwd, ...userData } = user
 
       return {
         user: userData,

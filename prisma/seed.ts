@@ -23,6 +23,9 @@ export const prisma = new PrismaClient({
 })
 
 async function clearData() {
+	await prisma.notification.deleteMany()
+	await prisma.groupMessage.deleteMany()
+	await prisma.groupMembership.deleteMany()
 	await prisma.match.deleteMany()
 	await prisma.swipe.deleteMany()
 	await prisma.message.deleteMany()

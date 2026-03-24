@@ -5,6 +5,7 @@ import { ValidationPipe } from '@nestjs/common'
 import cookieParser from 'cookie-parser'
 import { NestExpressApplication } from '@nestjs/platform-express'
 import { ApiExceptionFilter } from './common/filters/api-exception.filter'
+import express from 'express'
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule)
@@ -19,6 +20,8 @@ async function bootstrap() {
   }
 
   app.use(cookieParser())
+  app.use(express.json({ limit: '12mb' }))
+  app.use(express.urlencoded({ extended: true, limit: '12mb' }))
 
   app.enableCors({
     origin: allowedOrigins && allowedOrigins.length ? allowedOrigins : true,

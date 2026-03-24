@@ -45,6 +45,10 @@ model City {
 model Group {
   id        String   @id @default(uuid())
   cityId    String
+  ownerUserId String
+  title     String
+  description String?
+  coverImage String?
   startDate DateTime
   endDate   DateTime
   capacity  Int
@@ -54,10 +58,13 @@ model Group {
   updatedAt DateTime @default(now()) @updatedAt
 
   city      City     @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  owner     User     @relation("OwnedGroups", fields: [ownerUserId], references: [id], onDelete: Cascade)
   memberships GroupMembership[]
   messages    GroupMessage[]
+  notifications Notification[]
 
   @@index([cityId])
+  @@index([ownerUserId])
   @@index([startDate])
   @@index([endDate])
 }
@@ -65,21 +72,33 @@ model Group {
 enum GroupMembershipStatus {
   PENDING
   MEMBER
+  REJECTED
+}
+
+enum GroupMembershipRole {
+  OWNER
+  ADMIN
+  MEMBER
 }
 
 model GroupMembership {
   groupId     String
   userId      String
   status      GroupMembershipStatus @default(PENDING)
+  role        GroupMembershipRole   @default(MEMBER)
   requestedAt DateTime              @default(now())
+  respondedAt DateTime?
+  reviewedByUserId String?
   updatedAt   DateTime              @default(now()) @updatedAt
 
   group       Group                 @relation(fields: [groupId], references: [id], onDelete: Cascade)
   user        User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reviewedBy  User?                 @relation("ReviewedGroupMemberships", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
 
   @@id([groupId, userId])
   @@index([userId])
   @@index([status])
+  @@index([reviewedByUserId])
 }
 
 model GroupMessage {
@@ -95,6 +114,38 @@ model GroupMessage {
 
   @@index([groupId, createdAt])
   @@index([userId])
+}
+
+enum NotificationType {
+  GROUP_JOIN_REQUEST
+  GROUP_REQUEST_APPROVED
+  GROUP_REQUEST_REJECTED
+  GROUP_REQUEST_RESOLVED
+  GROUP_ROLE_CHANGED
+  GROUP_MEMBER_REMOVED
+  GROUP_UPDATED
+}
+
+model Notification {
+  id          String   @id @default(uuid())
+  userId      String
+  actorUserId String?
+  groupId     String?
+  membershipUserId String?
+  type        NotificationType
+  title       String
+  message     String
+  data        Json?
+  readAt      DateTime?
+  createdAt   DateTime @default(now())
+
+  user        User     @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+  actor       User?    @relation("NotificationActors", fields: [actorUserId], references: [id], onDelete: SetNull)
+  group       Group?   @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([groupId])
+  @@index([membershipUserId])
 }
 
 model Attraction {

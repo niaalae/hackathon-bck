@@ -17,6 +17,7 @@ model User {
   preferences  Json?
 
   guideProfile Guide?
+  ownedGroups  Group[]  @relation("OwnedGroups")
   tripsOwned   Trip[]   @relation("TripOwner")
   collabs      TripCollaborator[]
   bookings     Booking[]
@@ -25,7 +26,10 @@ model User {
   swipes       Swipe[]   @relation("SwipeFromUser")
   matches      Match[]   @relation("MatchUser")
   groupMemberships GroupMembership[]
+  reviewedGroupMemberships GroupMembership[] @relation("ReviewedGroupMemberships")
   groupMessages    GroupMessage[]
+  notifications Notification[] @relation("UserNotifications")
+  notificationActions Notification[] @relation("NotificationActors")
 }
 
 model Guide {

@@ -7,6 +7,10 @@ export class SearchGroupsQueryDto {
   city?: string;
 
   @IsOptional()
+  @IsString()
+  search?: string;
+
+  @IsOptional()
   @IsISO8601()
   start?: string;
 

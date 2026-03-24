@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  Patch,
   Param,
   Post,
   Query,
@@ -12,7 +13,11 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from '@/auth/auth.guard';
 import { CreateGroupMessageDto } from '@/public/dto/group/create-group-message.dto';
+import { CreateGroupDto } from '@/public/dto/group/create-group.dto';
+import { ReviewGroupMembershipDto } from '@/public/dto/group/review-group-membership.dto';
 import { SearchGroupsQueryDto } from '@/public/dto/group/search-groups.query.dto';
+import { UpdateGroupDto } from '@/public/dto/group/update-group.dto';
+import { UpdateGroupMemberRoleDto } from '@/public/dto/group/update-group-member-role.dto';
 import { GroupPublicService } from '@/services/group-public.service';
 
 @Controller('groups')
@@ -43,8 +48,39 @@ export class GroupPublicController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.groupPublicService.findOne(id);
+  findOne(@Param('id') id: string, @Req() req: { user?: { id?: string } }) {
+    return this.groupPublicService.findOne(id, req.user?.id);
+  }
+
+  @UseGuards(AuthGuard)
+  @Post()
+  async create(@Req() req: { user?: { id?: string } }, @Body() body: CreateGroupDto) {
+    const userId = req.user?.id;
+    if (!userId) throw new UnauthorizedException('User not authenticated');
+
+    return this.groupPublicService.create(userId, body);
+  }
+
+  @UseGuards(AuthGuard)
+  @Patch(':id')
+  async update(
+    @Param('id') id: string,
+    @Req() req: { user?: { id?: string } },
+    @Body() body: UpdateGroupDto,
+  ) {
+    const userId = req.user?.id;
+    if (!userId) throw new UnauthorizedException('User not authenticated');
+
+    return this.groupPublicService.updateGroup(id, userId, body);
+  }
+
+  @UseGuards(AuthGuard)
+  @Delete(':id')
+  async remove(@Param('id') id: string, @Req() req: { user?: { id?: string } }) {
+    const userId = req.user?.id;
+    if (!userId) throw new UnauthorizedException('User not authenticated');
+
+    return this.groupPublicService.deleteGroup(id, userId);
   }
 
   @UseGuards(AuthGuard)
@@ -63,6 +99,47 @@ export class GroupPublicController {
     if (!userId) throw new UnauthorizedException('User not authenticated');
 
     return this.groupPublicService.cancelJoin(id, userId);
+  }
+
+  @UseGuards(AuthGuard)
+  @Patch(':id/members/:userId/review')
+  async reviewMember(
+    @Param('id') id: string,
+    @Param('userId') targetUserId: string,
+    @Req() req: { user?: { id?: string } },
+    @Body() body: ReviewGroupMembershipDto,
+  ) {
+    const reviewerId = req.user?.id;
+    if (!reviewerId) throw new UnauthorizedException('User not authenticated');
+
+    return this.groupPublicService.reviewMembership(id, reviewerId, targetUserId, body);
+  }
+
+  @UseGuards(AuthGuard)
+  @Patch(':id/members/:userId/role')
+  async updateMemberRole(
+    @Param('id') id: string,
+    @Param('userId') targetUserId: string,
+    @Req() req: { user?: { id?: string } },
+    @Body() body: UpdateGroupMemberRoleDto,
+  ) {
+    const actorUserId = req.user?.id;
+    if (!actorUserId) throw new UnauthorizedException('User not authenticated');
+
+    return this.groupPublicService.updateMemberRole(id, actorUserId, targetUserId, body);
+  }
+
+  @UseGuards(AuthGuard)
+  @Delete(':id/members/:userId')
+  async removeMember(
+    @Param('id') id: string,
+    @Param('userId') targetUserId: string,
+    @Req() req: { user?: { id?: string } },
+  ) {
+    const actorUserId = req.user?.id;
+    if (!actorUserId) throw new UnauthorizedException('User not authenticated');
+
+    return this.groupPublicService.removeMember(id, actorUserId, targetUserId);
   }
 
   @UseGuards(AuthGuard)
