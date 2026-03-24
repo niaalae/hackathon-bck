@@ -24,6 +24,8 @@ model User {
   messagesSent Message[] @relation("MessageFromUser")
   swipes       Swipe[]   @relation("SwipeFromUser")
   matches      Match[]   @relation("MatchUser")
+  groupMemberships GroupMembership[]
+  groupMessages    GroupMessage[]
 }
 
 model Guide {

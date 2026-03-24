@@ -54,10 +54,47 @@ model Group {
   updatedAt DateTime @default(now()) @updatedAt
 
   city      City     @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  memberships GroupMembership[]
+  messages    GroupMessage[]
 
   @@index([cityId])
   @@index([startDate])
   @@index([endDate])
+}
+
+enum GroupMembershipStatus {
+  PENDING
+  MEMBER
+}
+
+model GroupMembership {
+  groupId     String
+  userId      String
+  status      GroupMembershipStatus @default(PENDING)
+  requestedAt DateTime              @default(now())
+  updatedAt   DateTime              @default(now()) @updatedAt
+
+  group       Group                 @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user        User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([groupId, userId])
+  @@index([userId])
+  @@index([status])
+}
+
+model GroupMessage {
+  id        String   @id @default(uuid())
+  groupId   String
+  userId    String
+  message   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([groupId, createdAt])
+  @@index([userId])
 }
 
 model Attraction {

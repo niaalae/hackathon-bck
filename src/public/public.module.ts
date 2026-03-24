@@ -11,6 +11,7 @@ import { AgentPublicController } from './controllers/agent.controller';
 import { BookingPublicController } from './controllers/booking.controller';
 import { GroupPublicController } from './controllers/group-public.controller';
 import { GamificationPublicController } from './controllers/gamification.controller';
+import { UserGroupsPublicController } from './controllers/user-groups.controller';
 
 @Module({
   imports: [ServicesModule],
@@ -26,6 +27,7 @@ import { GamificationPublicController } from './controllers/gamification.control
     BookingPublicController,
     GroupPublicController,
     GamificationPublicController,
+    UserGroupsPublicController,
   ],
 })
 export class PublicModule {}

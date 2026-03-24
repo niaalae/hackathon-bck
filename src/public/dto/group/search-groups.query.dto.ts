@@ -1,10 +1,10 @@
 import { Type } from 'class-transformer';
-import { IsInt, IsISO8601, IsNotEmpty, IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
+import { IsInt, IsISO8601, IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
 
 export class SearchGroupsQueryDto {
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  city!: string;
+  city?: string;
 
   @IsOptional()
   @IsISO8601()
