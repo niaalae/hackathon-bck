@@ -21,26 +21,9 @@ export class AuthController {
 
 	@Post('auth/google')
 	@HttpCode(200)
-	async GoogleLogin(@Req() req: Request) {
+	async GoogleLogin(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
 		const { token } = req.body
-
-		try {
-			const payload = await this.authService.verifyGoogleToken(token)
-			return payload
-			// const { email, name, sub: googleId } = payload
-
-			// // 1. Find or create user
-			// let user = await User.findOne({ email })
-
-			// await this.register({ name, email, password: googleId })
-
-			// // 2. Issue YOUR JWT (same as normal login)
-			// // const jwtToken = generateJWT(user)
-
-			// return { token: jwtToken }
-		} catch (err) {
-			return { error: 'Invalid Google token' }
-		}
+		return this.authService.googleLogin(token, res)
 	}
 
 	@Post('refresh')

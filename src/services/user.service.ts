@@ -18,6 +18,8 @@ export class UserService {
           name: createUserDto.name,
           email: createUserDto.email,
           passwordHash: await bcrypt.hash(createUserDto.password, 12),
+          authMethod: 'PASSWORD',
+          authProviderId: null,
           avatarUrl: createUserDto.avatarUrl,
           preferences,
           role: createUserDto.role ?? 'TRAVELER',
@@ -63,6 +65,8 @@ export class UserService {
           passwordHash: updateUserDto.password
             ? await bcrypt.hash(updateUserDto.password, 12)
             : undefined,
+          authMethod: updateUserDto.password ? 'PASSWORD' : undefined,
+          authProviderId: updateUserDto.password ? null : undefined,
         },
         omit: { passwordHash: true },
       });

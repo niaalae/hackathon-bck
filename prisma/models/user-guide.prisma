@@ -4,10 +4,17 @@ enum UserRole {
   ADMIN
 }
 
+enum AuthMethod {
+  PASSWORD
+  GOOGLE
+}
+
 model User {
   id           String   @id @default(uuid())
   email        String   @unique
-  passwordHash String
+  passwordHash String?
+  authMethod   AuthMethod @default(PASSWORD)
+  authProviderId String? @unique
   name         String
   avatarUrl    String?
   role         UserRole @default(TRAVELER)
