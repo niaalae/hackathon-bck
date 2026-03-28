@@ -19,7 +19,7 @@ export class AuthController {
 		return this.authService.login(data, res)
 	}
 
-	@Post('/api/auth/google')
+	@Post('auth/google')
 	@HttpCode(200)
 	async GoogleLogin(@Req() req: Request) {
 		const { token } = req.body
