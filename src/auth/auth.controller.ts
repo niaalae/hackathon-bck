@@ -26,8 +26,7 @@ export class AuthController {
 
 		try {
 			const payload = await this.authService.verifyGoogleToken(token)
-			console.log('Google token verified, payload:', payload)
-			return
+			return payload
 			// const { email, name, sub: googleId } = payload
 
 			// // 1. Find or create user
