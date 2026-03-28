@@ -13,6 +13,8 @@ import { ChatService } from './chat.service';
 import { BookingService } from './booking.service';
 import { GroupPublicService } from './group-public.service';
 import { GamificationService } from './gamification.service';
+import { FlightsService } from './flights.service';
+import { LeaderboardService } from './leaderboard.service';
 
 const services = [
   UserService,
@@ -29,6 +31,8 @@ const services = [
   BookingService,
   GroupPublicService,
   GamificationService,
+  FlightsService,
+  LeaderboardService,
 ];
 
 @Module({

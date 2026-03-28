@@ -13,6 +13,7 @@ import { GroupPublicController } from './controllers/group-public.controller';
 import { GamificationPublicController } from './controllers/gamification.controller';
 import { UserGroupsPublicController } from './controllers/user-groups.controller';
 import { UserNotificationsController } from './controllers/user-notifications.controller';
+import { FlightsPublicController } from './controllers/flights.controller';
 
 @Module({
   imports: [ServicesModule],
@@ -30,6 +31,7 @@ import { UserNotificationsController } from './controllers/user-notifications.co
     GamificationPublicController,
     UserGroupsPublicController,
     UserNotificationsController,
+    FlightsPublicController,
   ],
 })
 export class PublicModule {}
