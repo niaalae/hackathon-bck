@@ -1392,7 +1392,10 @@ maxOutputTokens must handle full itinerary.`;
       ),
     };
     const bookings = this.sanitizePlannerBookings(request, normalizedResponse);
-    const persistedTrip = null;
+    const persistedTrip = await this.persistPlannerTrip(
+      request,
+      normalizedResponse,
+    );
     const baseActions = this.buildActions(
       normalizedResponse.intent,
       bookings,
