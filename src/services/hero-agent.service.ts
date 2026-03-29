@@ -562,15 +562,46 @@ export class HeroAgentService {
         ? Math.round(request.budgetDh)
         : null;
     const forcedBudgetUsd = forcedBudgetMad ? Math.max(50, Math.round(forcedBudgetMad / 10)) : null;
+    const moroccoCities = [
+      'Fes',
+      'Fez',
+      'Marrakech',
+      'Casablanca',
+      'Chefchaouen',
+      'Essaouira',
+      'Agadir',
+      'Rabat',
+      'Tangier',
+      'Merzouga',
+      'Ouarzazate',
+      'Imlil',
+      'Dakhla',
+      'Meknes',
+    ];
+
+    const forcePlannerCity = (value?: string | null) => {
+      if (!value) return value ?? '';
+
+      return moroccoCities.reduce((next, city) => {
+        if (city.toLowerCase() === forcedCity.toLowerCase()) return next;
+        return next.replace(new RegExp(`\\b${city}\\b`, 'gi'), forcedCity);
+      }, value);
+    };
 
     const normalizedItinerary = Array.from({ length: forcedDuration }).map((_, index) => {
       const sourceDay = travelPlan.itinerary?.[index] ?? travelPlan.itinerary?.[travelPlan.itinerary.length - 1];
       return {
         day: index + 1,
-        theme: sourceDay?.theme || `Day ${index + 1} in ${forcedCity}`,
-        morning: sourceDay?.morning?.length ? sourceDay.morning : [`🌅 Explore ${forcedCity} in the morning`],
-        afternoon: sourceDay?.afternoon?.length ? sourceDay.afternoon : [`🍽️ Lunch and local discoveries in ${forcedCity}`],
-        evening: sourceDay?.evening?.length ? sourceDay.evening : [`🌙 Slow evening in ${forcedCity}`],
+        theme: forcePlannerCity(sourceDay?.theme) || `Day ${index + 1} in ${forcedCity}`,
+        morning: sourceDay?.morning?.length
+          ? sourceDay.morning.map((entry) => forcePlannerCity(entry))
+          : [`🌅 Explore ${forcedCity} in the morning`],
+        afternoon: sourceDay?.afternoon?.length
+          ? sourceDay.afternoon.map((entry) => forcePlannerCity(entry))
+          : [`🍽️ Lunch and local discoveries in ${forcedCity}`],
+        evening: sourceDay?.evening?.length
+          ? sourceDay.evening.map((entry) => forcePlannerCity(entry))
+          : [`🌙 Slow evening in ${forcedCity}`],
         estimatedDailyCost:
           sourceDay?.estimatedDailyCost ??
           Math.max(45, Math.round((forcedBudgetUsd ?? travelPlan.totalEstimatedCost ?? 300) / forcedDuration)),
@@ -588,7 +619,8 @@ export class HeroAgentService {
       hotels: Array.isArray(travelPlan.hotels)
         ? travelPlan.hotels.map((hotel) => ({
             ...hotel,
-            location: forcedCity,
+            name: forcePlannerCity(hotel.name),
+            location: forcePlannerCity(hotel.location) || forcedCity,
             totalPrice: hotel.pricePerNight * forcedDuration,
           }))
         : [],
@@ -793,12 +825,20 @@ export class HeroAgentService {
     const cities = await this.prismaService.city.findMany({
       select: { id: true, name: true, slug: true },
     });
-    const target = cityName.trim().toLowerCase();
+    const aliasMap: Record<string, string> = {
+      fes: 'fez',
+      fez: 'fez',
+      marrakesh: 'marrakech',
+      tanger: 'tangier',
+    };
+    const normalizeLookup = (value: string) =>
+      aliasMap[value.trim().toLowerCase()] ?? value.trim().toLowerCase();
+    const target = normalizeLookup(cityName);
 
     const match = cities.find((city) => {
       return (
-        city.name.trim().toLowerCase() === target ||
-        city.slug.trim().toLowerCase() === target.replace(/\s+/g, '-')
+        normalizeLookup(city.name) === target ||
+        normalizeLookup(city.slug.replace(/\s+/g, '-')) === target.replace(/\s+/g, '-')
       );
     });
 
