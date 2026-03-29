@@ -80,7 +80,9 @@ type HeroAgentResponse = {
 
 type AgentActionType =
   | 'SHOW_TRIPS'
+  | 'SHOW_MATCH'
   | 'SHOW_GROUPS'
+  | 'REQUEST_GROUP_JOIN'
   | 'SHOW_BOOKINGS'
   | 'SHOW_GUIDES'
   | 'SHOW_MAP'
@@ -389,6 +391,7 @@ export class HeroAgentService {
     prompt?: string,
   ): AgentAction[] {
     const actions: AgentAction[] = [];
+    const isMatchPrompt = !!prompt && /(match|matching|swipe|people like me|similar travelers|find people)/i.test(prompt);
 
     if (travelPlan) {
       actions.push({ type: 'SHOW_TRIPS', payload: { travelPlan } });
@@ -406,7 +409,7 @@ export class HeroAgentService {
     }
 
     if (intent === 'collaboration') {
-      actions.push({ type: 'SHOW_GROUPS' });
+      actions.push({ type: isMatchPrompt ? 'SHOW_MATCH' : 'SHOW_GROUPS' });
     }
 
     if (intent === 'guide') {
@@ -419,6 +422,93 @@ export class HeroAgentService {
 
     if (intent === 'information' && actions.length === 0) {
       actions.push({ type: 'SHOW_TRIPS' });
+    }
+
+    return actions;
+  }
+
+  private extractPromptCity(prompt: string) {
+    return this.moroccoCities.find((city) =>
+      new RegExp(`\\b${city}\\b`, 'i').test(prompt),
+    );
+  }
+
+  private wantsGroupJoin(prompt: string) {
+    return /(join|request to join|send (a )?join request|apply to join|join this group|join that group)/i.test(
+      prompt,
+    );
+  }
+
+  private async findJoinableGroup(prompt: string) {
+    if (!this.wantsGroupJoin(prompt)) return null;
+
+    const city = this.extractPromptCity(prompt);
+    const searchPrompt = prompt.trim();
+
+    const groups = await this.prismaService.group.findMany({
+      where: {
+        startDate: { gt: new Date() },
+        ...(city
+          ? {
+              city: {
+                name: { contains: city, mode: 'insensitive' as const },
+              },
+            }
+          : {}),
+        OR: [
+          { title: { contains: searchPrompt, mode: 'insensitive' as const } },
+          { description: { contains: searchPrompt, mode: 'insensitive' as const } },
+          ...(city
+            ? [{ city: { name: { contains: city, mode: 'insensitive' as const } } }]
+            : []),
+        ],
+      },
+      include: {
+        city: {
+          select: { id: true, name: true, slug: true },
+        },
+        memberships: {
+          where: { status: 'MEMBER' },
+          select: { userId: true },
+        },
+      },
+      orderBy: [{ startDate: 'asc' }, { createdAt: 'desc' }],
+      take: 5,
+    });
+
+    const candidate = groups.find((group) => group.memberships.length < group.capacity);
+    if (!candidate) return null;
+
+    return {
+      groupId: candidate.id,
+      title: candidate.title,
+      cityId: candidate.cityId,
+      cityName: candidate.city.name,
+    };
+  }
+
+  private async buildActionsForPrompt(
+    intent: HeroAgentResponse['intent'],
+    bookings: BookingSuggestion[],
+    travelPlan: TravelPlan | undefined,
+    prompt: string,
+  ) {
+    const actions = this.buildActions(intent, bookings, travelPlan, prompt);
+    const joinCandidate = await this.findJoinableGroup(prompt);
+
+    if (joinCandidate) {
+      actions.unshift({
+        type: 'REQUEST_GROUP_JOIN',
+        payload: joinCandidate,
+      });
+      if (!actions.some((action) => action.type === 'SHOW_GROUPS')) {
+        actions.push({
+          type: 'SHOW_GROUPS',
+          payload: {
+            city: joinCandidate.cityName,
+          },
+        });
+      }
     }
 
     return actions;
@@ -878,7 +968,7 @@ export class HeroAgentService {
         intent: 'information',
         followUpQuestion: 'Do you want to create a new trip or match with a collaborator?',
         bookings,
-        actions: this.buildActions('information', bookings, undefined, cleanPrompt),
+        actions: await this.buildActionsForPrompt('information', bookings, undefined, cleanPrompt),
       };
     }
 
@@ -896,7 +986,7 @@ export class HeroAgentService {
           ? null
           : 'Do you want to create a new trip with these suggestions?',
         bookings,
-        actions: this.buildActions(inferredIntent, bookings, undefined, cleanPrompt),
+        actions: await this.buildActionsForPrompt(inferredIntent, bookings, undefined, cleanPrompt),
       };
     }
 
@@ -1005,7 +1095,7 @@ maxOutputTokens must handle full itinerary.`;
             ? null
             : 'Should I create a new trip from these suggestions?',
           bookings,
-          actions: this.buildActions(inferredIntent, bookings, undefined, cleanPrompt),
+          actions: await this.buildActionsForPrompt(inferredIntent, bookings, undefined, cleanPrompt),
         };
       }
 
@@ -1025,7 +1115,7 @@ maxOutputTokens must handle full itinerary.`;
             ? null
             : 'Should I create a new trip or keep browsing?',
           bookings,
-          actions: this.buildActions(inferredIntent, bookings, undefined, cleanPrompt),
+          actions: await this.buildActionsForPrompt(inferredIntent, bookings, undefined, cleanPrompt),
         };
       }
 
@@ -1062,7 +1152,7 @@ maxOutputTokens must handle full itinerary.`;
           : this.normalizeFollowUp(parsed.followUpQuestion),
         bookings,
         travelPlan,
-        actions: this.buildActions(intent, bookings, travelPlan, cleanPrompt),
+        actions: await this.buildActionsForPrompt(intent, bookings, travelPlan, cleanPrompt),
       };
     } catch (error) {
       this.logger.warn(`Groq API failed: ${String(error)}`);
@@ -1078,7 +1168,7 @@ maxOutputTokens must handle full itinerary.`;
           ? null
           : 'Should I create a new trip from these suggestions?',
         bookings,
-        actions: this.buildActions(inferredIntent, bookings, undefined, cleanPrompt),
+        actions: await this.buildActionsForPrompt(inferredIntent, bookings, undefined, cleanPrompt),
       };
     }
   }
