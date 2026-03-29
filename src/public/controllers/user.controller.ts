@@ -48,22 +48,17 @@ export class UserPublicController {
    */
   @Get('leaderboard')
   async getLeaderboard(
-    @Query('limit') limit?: string,
-    @Query('offset') offset?: string,
     @Query('category') category: string = 'global',
     @Query('cityId') cityId?: string,
     @Req() req?: any,
   ) {
-    const limitNum = limit ? Math.min(Math.max(1, parseInt(limit)), 100) : 50;
-    const offsetNum = offset ? Math.max(0, parseInt(offset)) : 0;
-
     if (category === 'city' && cityId) {
-      return this.leaderboardService.getCityLeaderboard(cityId, limitNum, offsetNum);
+      return this.leaderboardService.getCityLeaderboard(cityId);
     } else if (category === 'friends' && req?.user?.id) {
-      return this.leaderboardService.getFriendsLeaderboard(req.user.id, limitNum, offsetNum);
+      return this.leaderboardService.getFriendsLeaderboard(req.user.id);
     }
 
-    return this.leaderboardService.getGlobalLeaderboard(limitNum, offsetNum);
+    return this.leaderboardService.getGlobalLeaderboard();
   }
 
   @UseGuards(AuthGuard)
