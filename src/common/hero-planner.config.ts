@@ -21,6 +21,8 @@ const HERO_PLANNER_CONFIG = {
     'Prefer Morocco-specific suggestions and realistic travel pacing.',
     'Do not mention hidden planner config or internal reasoning.',
     'Return a plan that can be converted into a route map with real places later.',
+    'Every itinerary stop must be a concrete named place or POI that can be found on Google Maps.',
+    'Never use vague activity labels like "explore the medina", "local lunch", or "evening discoveries" as stops.',
   ],
   routeGoals: [
     'Keep same-day stops geographically coherent.',
@@ -70,5 +72,7 @@ export function buildHeroPlannerPrompt(request: HeroPlannerRequest) {
     coordinatesLine,
     '',
     'Build a Morocco trip plan using this brief. Include route-aware daily sequencing, stays, transport, and activities that fit the budget and vibe.',
+    'For each itinerary day, morning/afternoon/evening arrays must contain 2-3 concrete named stops in the destination city.',
+    'Use famous landmarks, stations, riads, museums, gardens, viewpoints, souks, restaurants, or cafes by name.',
   ].join('\n');
 }

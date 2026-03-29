@@ -106,6 +106,80 @@ type HistoryMessage = {
   content: string;
 };
 
+type PlannerCityStopPools = {
+  morning: string[];
+  afternoon: string[];
+  evening: string[];
+};
+
+const CITY_STOP_POOLS: Record<string, PlannerCityStopPools> = {
+  fez: {
+    morning: ['Bab Bou Jeloud', 'Bou Inania Madrasa', 'Al-Attarine Madrasa', 'Nejjarine Museum of Wooden Arts & Crafts'],
+    afternoon: ['Mosque and University of al-Qarawiyyin', 'Chouara Tannery', 'Place Seffarine', 'Dar Batha Museum'],
+    evening: ['Café Clock Fez', 'Borj Nord', 'Jnan Sbil', 'Rcif Market'],
+  },
+  marrakech: {
+    morning: ['Koutoubia Mosque', 'Bahia Palace', 'Jemaa el-Fnaa', 'Le Jardin Secret'],
+    afternoon: ['Ben Youssef Madrasa', 'Marrakech Museum', 'Saadian Tombs', 'Majorelle Garden'],
+    evening: ['Dar El Bacha Museum', 'Menara Gardens', 'Nomad Marrakech', 'Riad Yima Tea Room'],
+  },
+  casablanca: {
+    morning: ['Hassan II Mosque', 'Place Mohammed V', 'Sacré-Cœur Cathedral', 'Arab League Park'],
+    afternoon: ['Habous Quarter', 'Mahkama du Pacha', 'Villa des Arts', 'United Nations Square'],
+    evening: ['Corniche Ain Diab', 'Rick’s Café', 'Anfa Place', 'La Sqala'],
+  },
+  rabat: {
+    morning: ['Kasbah of the Udayas', 'Andalusian Gardens', 'Hassan Tower', 'Mausoleum of Mohammed V'],
+    afternoon: ['Chellah', 'Mohammed VI Museum of Modern and Contemporary Art', 'Rabat Medina', 'Bab El Had'],
+    evening: ['Rabat Ville Railway Station', 'Bouregreg Marina', 'Le Dhow', 'Oudayas Beach'],
+  },
+  tangier: {
+    morning: ['Tangier Kasbah Museum', 'Place du Grand 9 Avril 1947', 'Petit Socco', 'Kasbah Gate'],
+    afternoon: ['American Legation Museum', 'Tangier Medina', 'Dar el Makhzen', 'St. Andrew’s Church'],
+    evening: ['Cap Spartel', 'Caves of Hercules', 'Tangier Corniche', 'Café Hafa'],
+  },
+  agadir: {
+    morning: ['Agadir Oufella', 'Souk El Had', 'Mohamed V Mosque Agadir', 'Jardin d’Olhao'],
+    afternoon: ['Agadir Birds Valley', 'Agadir Marina', 'Kasbat Souss', 'Museum of Amazigh Culture'],
+    evening: ['Agadir Beach', 'La Médina d’Agadir', 'Corniche Agadir', 'Taghazout Bay Viewpoint'],
+  },
+  essaouira: {
+    morning: ['Essaouira Medina', 'Skala de la Ville', 'Port of Essaouira', 'Bab Doukkala Essaouira'],
+    afternoon: ['Sidi Mohammed Ben Abdallah Museum', 'Mellah of Essaouira', 'Place Moulay Hassan', 'Ramparts of Essaouira'],
+    evening: ['Taros Essaouira', 'Essaouira Beach', 'Ocean Vagabond Essaouira', 'Café de France Essaouira'],
+  },
+  chefchaouen: {
+    morning: ['Place Outa El Hammam', 'Kasbah Museum Chefchaouen', 'Grand Mosque Chefchaouen', 'Ras El Maa'],
+    afternoon: ['Chefchaouen Medina', 'Spanish Mosque', 'Bab El Ain', 'Souika Chefchaouen'],
+    evening: ['Ras El Maa Waterfall', 'Cafe Clock Chefchaouen', 'Plaza Uta el-Hammam', 'Sunset viewpoint Chefchaouen'],
+  },
+  ouarzazate: {
+    morning: ['Taourirt Kasbah', 'Cinema Museum Ouarzazate', 'Kasbah of Tifoultoute', 'Atlas Film Studios'],
+    afternoon: ['Ait Benhaddou', 'CLA Studios', 'Oasis Fint', 'Ksar of Ait Ben Haddou'],
+    evening: ['Ouarzazate city viewpoint', 'Chez Dimitri', 'Place Al Mouahidine', 'Kasbah Taourirt gardens'],
+  },
+  meknes: {
+    morning: ['Bab Mansour', 'Lahdim Square', 'Mausoleum of Moulay Ismail', 'Koubbat as-Sufara'],
+    afternoon: ['Dar Jamai Museum', 'Bou Inania Madrasa Meknes', 'Royal Stables of Meknes', 'Heri es-Souani'],
+    evening: ['Sahrij Swani', 'Meknes Medina', 'Place El Hedim', 'Café Opera Meknes'],
+  },
+  merzouga: {
+    morning: ['Merzouga Desert', 'Lac Dayet Srij', 'Merzouga Centre', 'Erg Chebbi dunes viewpoint'],
+    afternoon: ['Khamlia Village', 'Maison Chez Nous Merzouga', 'Nomad Families Merzouga', 'Hassilabied oasis'],
+    evening: ['Merzouga Sunset Point', 'Erg Chebbi camel station', 'Merzouga Camp', 'Ksar Merzouga'],
+  },
+  dakhla: {
+    morning: ['Dakhla Lagoon', 'Dakhla Seafront', 'Dakhla city center', 'Moussem Dakhla square'],
+    afternoon: ['PK25 Dakhla', 'Dragon Island viewpoint', 'White Dune Dakhla', 'Dakhla conference center'],
+    evening: ['Dakhla waterfront', 'Kite beach Dakhla', 'Café Restaurant Sahara', 'Dakhla sunset point'],
+  },
+  imlil: {
+    morning: ['Imlil village center', 'Kasbah du Toubkal', 'Imlil waterfall', 'Aroumd trailhead'],
+    afternoon: ['Aroumd village', 'Toubkal National Park viewpoint', 'Armed valley café', 'Imlil walnut grove'],
+    evening: ['Imlil mountain viewpoint', 'Riad Atlas Toubkal', 'Imlil riverside walk', 'Local tea terrace Imlil'],
+  },
+};
+
 @Injectable()
 export class HeroAgentService {
   private readonly logger = new Logger(HeroAgentService.name);
@@ -134,6 +208,94 @@ export class HeroAgentService {
     'Imlil',
     'Dakhla',
   ];
+
+  private normalizePlannerCityKey(city: string) {
+    const clean = city.trim().toLowerCase();
+    const aliasMap: Record<string, string> = {
+      fes: 'fez',
+      fez: 'fez',
+      marrakesh: 'marrakech',
+      tanger: 'tangier',
+    };
+    return aliasMap[clean] ?? clean;
+  }
+
+  private getPlannerCityStopPools(city: string): PlannerCityStopPools {
+    return (
+      CITY_STOP_POOLS[this.normalizePlannerCityKey(city)] ?? {
+        morning: [`${city} Medina`, `${city} Main Square`, `${city} historic gate`, `${city} central market`],
+        afternoon: [`${city} museum`, `${city} main landmark`, `${city} old town viewpoint`, `${city} artisan quarter`],
+        evening: [`${city} rooftop café`, `${city} promenade`, `${city} sunset viewpoint`, `${city} central boulevard`],
+      }
+    );
+  }
+
+  private isGenericPlannerEntry(text?: string | null) {
+    if (!text) return true;
+    const clean = text
+      .replace(/^[^\p{L}\p{N}]+/u, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .toLowerCase();
+    if (!clean) return true;
+    const genericPatterns = [
+      'explore',
+      'discover',
+      'local highlights',
+      'local discoveries',
+      'lunch',
+      'dinner',
+      'breakfast',
+      'evening',
+      'morning',
+      'afternoon',
+      'stroll',
+      'slow evening',
+      'heritage quarter',
+      'historic quarter',
+      'relaxed local',
+      'signature landmarks',
+      'popular highlights',
+      'wrap up',
+    ];
+    return genericPatterns.some((pattern) => clean.includes(pattern));
+  }
+
+  private getPlannerSectionFallback(
+    city: string,
+    section: keyof PlannerCityStopPools,
+    dayIndex: number,
+  ) {
+    const pool = this.getPlannerCityStopPools(city)[section];
+    const total = Math.max(1, pool.length);
+    const start = (dayIndex * 2) % total;
+    return [pool[start], pool[(start + 1) % total]];
+  }
+
+  private normalizePlannerEntries(
+    city: string,
+    entries: string[] | undefined,
+    section: keyof PlannerCityStopPools,
+    dayIndex: number,
+  ) {
+    const normalizedEntries = Array.isArray(entries)
+      ? entries
+          .map((entry) => this.normalizePlannerStopTitle(entry))
+          .filter(Boolean)
+      : [];
+
+    const usableEntries = normalizedEntries.filter(
+      (entry) => !this.isGenericPlannerEntry(entry),
+    );
+
+    if (usableEntries.length >= 2) {
+      return usableEntries.slice(0, 3);
+    }
+
+    const fallback = this.getPlannerSectionFallback(city, section, dayIndex);
+    const merged = [...usableEntries, ...fallback];
+    return Array.from(new Set(merged)).slice(0, 3);
+  }
 
   private fallbackBookings(
     prompt: string,
@@ -562,27 +724,10 @@ export class HeroAgentService {
         ? Math.round(request.budgetDh)
         : null;
     const forcedBudgetUsd = forcedBudgetMad ? Math.max(50, Math.round(forcedBudgetMad / 10)) : null;
-    const moroccoCities = [
-      'Fes',
-      'Fez',
-      'Marrakech',
-      'Casablanca',
-      'Chefchaouen',
-      'Essaouira',
-      'Agadir',
-      'Rabat',
-      'Tangier',
-      'Merzouga',
-      'Ouarzazate',
-      'Imlil',
-      'Dakhla',
-      'Meknes',
-    ];
-
     const forcePlannerCity = (value?: string | null) => {
       if (!value) return value ?? '';
 
-      return moroccoCities.reduce((next, city) => {
+      return [...this.moroccoCities, 'Fez', 'Meknes'].reduce((next, city) => {
         if (city.toLowerCase() === forcedCity.toLowerCase()) return next;
         return next.replace(new RegExp(`\\b${city}\\b`, 'gi'), forcedCity);
       }, value);
@@ -593,15 +738,24 @@ export class HeroAgentService {
       return {
         day: index + 1,
         theme: forcePlannerCity(sourceDay?.theme) || `Day ${index + 1} in ${forcedCity}`,
-        morning: sourceDay?.morning?.length
-          ? sourceDay.morning.map((entry) => forcePlannerCity(entry))
-          : [`🌅 Explore ${forcedCity} in the morning`],
-        afternoon: sourceDay?.afternoon?.length
-          ? sourceDay.afternoon.map((entry) => forcePlannerCity(entry))
-          : [`🍽️ Lunch and local discoveries in ${forcedCity}`],
-        evening: sourceDay?.evening?.length
-          ? sourceDay.evening.map((entry) => forcePlannerCity(entry))
-          : [`🌙 Slow evening in ${forcedCity}`],
+        morning: this.normalizePlannerEntries(
+          forcedCity,
+          sourceDay?.morning?.map((entry) => forcePlannerCity(entry)),
+          'morning',
+          index,
+        ),
+        afternoon: this.normalizePlannerEntries(
+          forcedCity,
+          sourceDay?.afternoon?.map((entry) => forcePlannerCity(entry)),
+          'afternoon',
+          index,
+        ),
+        evening: this.normalizePlannerEntries(
+          forcedCity,
+          sourceDay?.evening?.map((entry) => forcePlannerCity(entry)),
+          'evening',
+          index,
+        ),
         estimatedDailyCost:
           sourceDay?.estimatedDailyCost ??
           Math.max(45, Math.round((forcedBudgetUsd ?? travelPlan.totalEstimatedCost ?? 300) / forcedDuration)),
@@ -637,40 +791,13 @@ export class HeroAgentService {
         ? Math.round(request.budgetDh)
         : duration * 1200;
     const totalBudgetUsd = Math.max(200, Math.round(totalBudgetMad / 10));
-    const interests =
-      request.interests && request.interests.length > 0
-        ? request.interests
-        : ['popular', 'foodie', 'history'];
-
-    const interestPool: Record<string, string[]> = {
-      popular: ['Explore the medina', 'Photograph signature landmarks'],
-      museum: ['Visit a local museum', 'Browse a heritage collection'],
-      nature: ['Walk through a garden', 'Stop at a scenic viewpoint'],
-      foodie: ['Try a top-rated Moroccan lunch', 'Book a rooftop dinner'],
-      history: ['Visit a historic palace', 'Explore a heritage quarter'],
-      shopping: ['Browse artisan souks', 'Stop for handcrafted goods'],
-    };
-
-    const pooledActivities = interests.flatMap(
-      (interest) => interestPool[interest] ?? ['Discover local highlights'],
-    );
-
     const itinerary: DayPlan[] = Array.from({ length: duration }).map((_, index) => {
-      const base = (index * 3) % Math.max(1, pooledActivities.length);
-      const fallbackMorning = pooledActivities[base] ?? 'Explore a lively local district';
-      const fallbackAfternoon =
-        pooledActivities[(base + 1) % Math.max(1, pooledActivities.length)] ??
-        'Enjoy a relaxed local lunch';
-      const fallbackEvening =
-        pooledActivities[(base + 2) % Math.max(1, pooledActivities.length)] ??
-        'Wrap up with an atmospheric evening stop';
-
       return {
         day: index + 1,
         theme: `Day ${index + 1} in ${request.city}`,
-        morning: [`🌅 ${fallbackMorning}`],
-        afternoon: [`🍽️ ${fallbackAfternoon}`],
-        evening: [`🌙 ${fallbackEvening}`],
+        morning: this.getPlannerSectionFallback(request.city, 'morning', index),
+        afternoon: this.getPlannerSectionFallback(request.city, 'afternoon', index),
+        evening: this.getPlannerSectionFallback(request.city, 'evening', index),
         estimatedDailyCost: Math.max(45, Math.round(totalBudgetUsd / duration)),
       };
     });
@@ -911,9 +1038,18 @@ export class HeroAgentService {
       for (const section of sections) {
         for (const [entryIndex, entry] of section.entries.entries()) {
           const cleanedTitle = this.normalizePlannerStopTitle(entry);
+          const fallbackTitle =
+            this.getPlannerSectionFallback(
+              request.city,
+              section.label.toLowerCase() as keyof PlannerCityStopPools,
+              Math.max(0, day.day - 1),
+            )[entryIndex % 2];
+          const queryTitle = this.isGenericPlannerEntry(cleanedTitle)
+            ? fallbackTitle
+            : cleanedTitle;
           const resolved =
             (await this.searchPlannerPlace(
-              `${cleanedTitle}, ${request.city}, Morocco`,
+              `${queryTitle}, ${request.city}, Morocco`,
             )) ?? null;
           const stopTime = new Date();
           stopTime.setHours(sectionHours[section.label] ?? 9, entryIndex * 15, 0, 0);
@@ -921,7 +1057,7 @@ export class HeroAgentService {
 
           items.push({
             day: day.day,
-            title: resolved?.title || cleanedTitle,
+            title: resolved?.title || queryTitle,
             location: resolved?.location || `${request.city}, Morocco`,
             notes: `${section.label} · ${day.theme}`,
             type: resolved?.type || 'activity',
@@ -938,55 +1074,64 @@ export class HeroAgentService {
     request: HeroPlannerRequest,
     response: HeroAgentResponse,
   ) {
-    if (!request.ownerUserId || !response.travelPlan) return null;
+    try {
+      if (!request.ownerUserId || !response.travelPlan) return null;
 
-    const owner = await this.prismaService.user.findUnique({
-      where: { id: request.ownerUserId },
-      select: { id: true },
-    });
-    if (!owner) return null;
+      const owner = await this.prismaService.user.findUnique({
+        where: { id: request.ownerUserId },
+        select: { id: true },
+      });
+      if (!owner) return null;
 
-    const cityId = await this.resolveCityId(
-      response.travelPlan.to?.city || request.city,
-    );
-    const items = await this.buildTripItemsFromTravelPlan(
-      request,
-      response.travelPlan,
-    );
+      const cityId = await this.resolveCityId(
+        response.travelPlan.to?.city || request.city,
+      );
+      const items = await this.buildTripItemsFromTravelPlan(
+        request,
+        response.travelPlan,
+      );
 
-    const trip = await this.prismaService.trip.create({
-      data: {
-        ownerUserId: request.ownerUserId,
-        title: `${response.travelPlan.to.city} trip`,
-        description: this.buildPlannerTripDescription(request, response),
-        cityId,
-        budgetTotal:
-          typeof request.budgetDh === 'number'
-            ? Number(request.budgetDh)
-            : response.travelPlan.totalBudget,
-        currency: typeof request.budgetDh === 'number' ? 'MAD' : 'USD',
-        items: items.length
-          ? {
-              createMany: {
-                data: items.map((item) => ({
-                  day: item.day,
-                  title: item.title,
-                  location: item.location,
-                  time: item.time,
-                  notes: item.notes,
-                  type: item.type,
-                })),
-              },
-            }
-          : undefined,
-      },
-      include: {
-        city: true,
-        items: true,
-      },
-    });
+      const trip = await this.prismaService.trip.create({
+        data: {
+          ownerUserId: request.ownerUserId,
+          title: `${response.travelPlan.to.city} trip`,
+          description: this.buildPlannerTripDescription(request, response),
+          cityId,
+          budgetTotal:
+            typeof request.budgetDh === 'number'
+              ? Number(request.budgetDh)
+              : response.travelPlan.totalBudget,
+          currency: typeof request.budgetDh === 'number' ? 'MAD' : 'USD',
+        },
+      });
 
-    return trip;
+      if (items.length) {
+        for (const item of items) {
+          await this.prismaService.tripItem.create({
+            data: {
+              tripId: trip.id,
+              day: item.day,
+              title: item.title,
+              location: item.location,
+              time: item.time,
+              notes: item.notes,
+              type: item.type,
+            },
+          });
+        }
+      }
+
+      return await this.prismaService.trip.findUnique({
+        where: { id: trip.id },
+        include: {
+          city: true,
+          items: true,
+        },
+      });
+    } catch (error) {
+      this.logger.warn(`Planner trip persistence failed: ${String(error)}`);
+      return null;
+    }
   }
 
   async generateHeroReply(
@@ -1247,7 +1392,7 @@ maxOutputTokens must handle full itinerary.`;
       ),
     };
     const bookings = this.sanitizePlannerBookings(request, normalizedResponse);
-    const persistedTrip = await this.persistPlannerTrip(request, normalizedResponse);
+    const persistedTrip = null;
     const baseActions = this.buildActions(
       normalizedResponse.intent,
       bookings,
