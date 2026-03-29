@@ -209,7 +209,7 @@ export class HeroAgentService {
   }
 
   private hasTravelSignal(prompt: string): boolean {
-    return /(trip|travel|plan|booking|book|flight|hotel|riad|stay|itinerary|route|map|guide|tour|visit|vacation|group|collab|match)/i.test(
+    return /(trip|travel|plan|booking|book|flight|hotel|riad|stay|itinerary|route|map|guide|tour|visit|vacation|group|collab|match|agenda|history|section|open)/i.test(
       prompt,
     );
   }
@@ -392,9 +392,26 @@ export class HeroAgentService {
   ): AgentAction[] {
     const actions: AgentAction[] = [];
     const isMatchPrompt = !!prompt && /(match|matching|swipe|people like me|similar travelers|find people)/i.test(prompt);
+    const normalizedPrompt = prompt?.toLowerCase() ?? '';
 
     if (travelPlan) {
       actions.push({ type: 'SHOW_TRIPS', payload: { travelPlan } });
+    }
+
+    if (normalizedPrompt && /(agenda|trip plan|my trip|my agenda|history section|open history|show history)/i.test(normalizedPrompt)) {
+      actions.push({ type: 'SHOW_TRIPS' });
+    }
+
+    if (normalizedPrompt && /(match|matching|swipe|people like me|find people|open match)/i.test(normalizedPrompt)) {
+      actions.push({ type: 'SHOW_MATCH' });
+    }
+
+    if (normalizedPrompt && /(group|groups|collab|collaborate|open groups)/i.test(normalizedPrompt)) {
+      actions.push({ type: 'SHOW_GROUPS' });
+    }
+
+    if (normalizedPrompt && /(map|route|navigation|navigate|open map)/i.test(normalizedPrompt)) {
+      actions.push({ type: 'SHOW_MAP' });
     }
 
     if (bookings.length > 0) {
@@ -424,7 +441,9 @@ export class HeroAgentService {
       actions.push({ type: 'SHOW_TRIPS' });
     }
 
-    return actions;
+    return actions.filter((action, index, list) =>
+      list.findIndex((candidate) => candidate.type === action.type) === index,
+    );
   }
 
   private extractPromptCity(prompt: string) {
@@ -994,6 +1013,8 @@ export class HeroAgentService {
 Your job is to classify the user's intent and guide them to the right flow.
 Intents: booking, information, collaboration, guide, new_trip.
 Always use the conversation history. If the user answers a previous question, do NOT ask the same thing again.
+You can help with direct app actions too. If the user asks to open agenda/history, matching, groups, bookings, or the map, answer briefly and let the action routing handle it.
+If the user asks to join a group and there is a suitable group, prefer helping them send the join request.
 
 If the user requests booking/reservations/flights/hotels, set intent=booking.
 If the user asks for a guide or local tour, set intent=guide.
