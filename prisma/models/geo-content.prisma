@@ -10,10 +10,10 @@ enum InfoScope {
 }
 
 model Region {
-  id          String   @id @default(uuid())
+  id          String  @id @default(uuid())
   name        String
   country     String
-  slug        String   @unique
+  slug        String  @unique
   description String?
   coverImage  String?
 
@@ -32,35 +32,35 @@ model City {
   description String?
   coverImage  String?
 
-  region      Region   @relation(fields: [regionId], references: [id], onDelete: Cascade)
+  region      Region       @relation(fields: [regionId], references: [id], onDelete: Cascade)
   attractions Attraction[]
-  guides      Guide[]  @relation("CityGuides")
+  guides      Guide[]      @relation("CityGuides")
   trips       Trip[]
   groups      Group[]
-  infoBlocks  InfoBlock[] @relation("CityInfo")
+  infoBlocks  InfoBlock[]  @relation("CityInfo")
 
   @@index([regionId])
 }
 
 model Group {
-  id        String   @id @default(uuid())
-  cityId    String
+  id          String   @id @default(uuid())
+  cityId      String
   ownerUserId String
-  title     String
+  title       String
   description String?
-  coverImage String?
-  startDate DateTime
-  endDate   DateTime
-  capacity  Int
-  budgetMin Decimal  @db.Decimal(12, 2)
-  budgetMax Decimal  @db.Decimal(12, 2)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
+  coverImage  String?
+  startDate   DateTime
+  endDate     DateTime
+  capacity    Int
+  budgetMin   Decimal  @db.Decimal(12, 2)
+  budgetMax   Decimal  @db.Decimal(12, 2)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
 
-  city      City     @relation(fields: [cityId], references: [id], onDelete: Cascade)
-  owner     User     @relation("OwnedGroups", fields: [ownerUserId], references: [id], onDelete: Cascade)
-  memberships GroupMembership[]
-  messages    GroupMessage[]
+  city          City              @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  owner         User              @relation("OwnedGroups", fields: [ownerUserId], references: [id], onDelete: Cascade)
+  memberships   GroupMembership[]
+  messages      GroupMessage[]
   notifications Notification[]
 
   @@index([cityId])
@@ -82,18 +82,18 @@ enum GroupMembershipRole {
 }
 
 model GroupMembership {
-  groupId     String
-  userId      String
-  status      GroupMembershipStatus @default(PENDING)
-  role        GroupMembershipRole   @default(MEMBER)
-  requestedAt DateTime              @default(now())
-  respondedAt DateTime?
+  groupId          String
+  userId           String
+  status           GroupMembershipStatus @default(PENDING)
+  role             GroupMembershipRole   @default(MEMBER)
+  requestedAt      DateTime              @default(now())
+  respondedAt      DateTime?
   reviewedByUserId String?
-  updatedAt   DateTime              @default(now()) @updatedAt
+  updatedAt        DateTime              @default(now()) @updatedAt
 
-  group       Group                 @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  user        User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  reviewedBy  User?                 @relation("ReviewedGroupMemberships", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
+  group      Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user       User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reviewedBy User? @relation("ReviewedGroupMemberships", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
 
   @@id([groupId, userId])
   @@index([userId])
@@ -109,8 +109,8 @@ model GroupMessage {
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 
-  group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([groupId, createdAt])
   @@index([userId])
@@ -127,21 +127,21 @@ enum NotificationType {
 }
 
 model Notification {
-  id          String   @id @default(uuid())
-  userId      String
-  actorUserId String?
-  groupId     String?
+  id               String           @id @default(uuid())
+  userId           String
+  actorUserId      String?
+  groupId          String?
   membershipUserId String?
-  type        NotificationType
-  title       String
-  message     String
-  data        Json?
-  readAt      DateTime?
-  createdAt   DateTime @default(now())
+  type             NotificationType
+  title            String
+  message          String
+  data             Json?
+  readAt           DateTime?
+  createdAt        DateTime         @default(now())
 
-  user        User     @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
-  actor       User?    @relation("NotificationActors", fields: [actorUserId], references: [id], onDelete: SetNull)
-  group       Group?   @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User   @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+  actor User?  @relation("NotificationActors", fields: [actorUserId], references: [id], onDelete: SetNull)
+  group Group? @relation(fields: [groupId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
   @@index([groupId])
@@ -161,21 +161,21 @@ model Attraction {
   durationMinutes Int?
   coverImage      String?
 
-  city       City     @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  city       City               @relation(fields: [cityId], references: [id], onDelete: Cascade)
   media      AttractionMedia[]
   tags       AttractionTagMap[]
-  infoBlocks InfoBlock[] @relation("AttractionInfo")
+  infoBlocks InfoBlock[]        @relation("AttractionInfo")
 
   @@index([cityId])
 }
 
 model AttractionMedia {
-  id           String   @id @default(uuid())
+  id           String    @id @default(uuid())
   attractionId String
   type         MediaType
   url          String
   caption      String?
-  position     Int      @default(0)
+  position     Int       @default(0)
 
   attraction Attraction @relation(fields: [attractionId], references: [id], onDelete: Cascade)
 

@@ -10,33 +10,33 @@ enum AuthMethod {
 }
 
 model User {
-  id           String   @id @default(uuid())
-  email        String   @unique
-  passwordHash String?
-  authMethod   AuthMethod @default(PASSWORD)
-  authProviderId String? @unique
-  name         String
-  avatarUrl    String?
-  role         UserRole @default(TRAVELER)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id             String     @id @default(uuid())
+  email          String     @unique
+  passwordHash   String?
+  authMethod     AuthMethod @default(PASSWORD)
+  authProviderId String?    @unique
+  name           String
+  avatarUrl      String?
+  role           UserRole   @default(TRAVELER)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
 
-  preferences  Json?
+  preferences Json?
 
-  guideProfile Guide?
-  ownedGroups  Group[]  @relation("OwnedGroups")
-  tripsOwned   Trip[]   @relation("TripOwner")
-  collabs      TripCollaborator[]
-  bookings     Booking[]
-  ratingsGiven Rating[]  @relation("RatingFromUser")
-  messagesSent Message[] @relation("MessageFromUser")
-  swipes       Swipe[]   @relation("SwipeFromUser")
-  matches      Match[]   @relation("MatchUser")
-  groupMemberships GroupMembership[]
-  reviewedGroupMemberships GroupMembership[] @relation("ReviewedGroupMemberships")
-  groupMessages    GroupMessage[]
-  notifications Notification[] @relation("UserNotifications")
-  notificationActions Notification[] @relation("NotificationActors")
+  guideProfile             Guide?
+  ownedGroups              Group[]            @relation("OwnedGroups")
+  tripsOwned               Trip[]             @relation("TripOwner")
+  collabs                  TripCollaborator[]
+  bookings                 Booking[]
+  ratingsGiven             Rating[]           @relation("RatingFromUser")
+  messagesSent             Message[]          @relation("MessageFromUser")
+  swipes                   Swipe[]            @relation("SwipeFromUser")
+  matches                  Match[]            @relation("MatchUser")
+  groupMemberships         GroupMembership[]
+  reviewedGroupMemberships GroupMembership[]  @relation("ReviewedGroupMemberships")
+  groupMessages            GroupMessage[]
+  notifications            Notification[]     @relation("UserNotifications")
+  notificationActions      Notification[]     @relation("NotificationActors")
 }
 
 model Guide {
@@ -53,25 +53,25 @@ model Guide {
   ratingAvg      Decimal? @db.Decimal(3, 2)
   ratingCount    Int      @default(0)
 
-  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  locationCity City?     @relation("CityGuides", fields: [locationCityId], references: [id])
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  locationCity City?           @relation("CityGuides", fields: [locationCityId], references: [id])
   media        GuideMedia[]
   pastTrips    GuidePastTrip[]
   ratings      Rating[]
-  messages     Message[] @relation("MessageToGuide")
-  swipesTarget Swipe[]   @relation("SwipeToGuide")
-  matches      Match[]   @relation("MatchGuide")
+  messages     Message[]       @relation("MessageToGuide")
+  swipesTarget Swipe[]         @relation("SwipeToGuide")
+  matches      Match[]         @relation("MatchGuide")
 }
 
 model GuideMedia {
-  id       String   @id @default(uuid())
+  id       String    @id @default(uuid())
   guideId  String
   type     MediaType
   url      String
   caption  String?
-  position Int      @default(0)
+  position Int       @default(0)
 
-  guide    Guide    @relation(fields: [guideId], references: [id], onDelete: Cascade)
+  guide Guide @relation(fields: [guideId], references: [id], onDelete: Cascade)
 
   @@index([guideId])
 }
@@ -86,7 +86,7 @@ model GuidePastTrip {
   summary   String?
   mediaUrl  String?
 
-  guide     Guide     @relation(fields: [guideId], references: [id], onDelete: Cascade)
+  guide Guide @relation(fields: [guideId], references: [id], onDelete: Cascade)
 
   @@index([guideId])
 }

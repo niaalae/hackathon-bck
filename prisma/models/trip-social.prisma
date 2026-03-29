@@ -49,8 +49,8 @@ model Trip {
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 
-  owner         User                 @relation("TripOwner", fields: [ownerUserId], references: [id], onDelete: Cascade)
-  city          City?                @relation(fields: [cityId], references: [id], onDelete: SetNull)
+  owner         User               @relation("TripOwner", fields: [ownerUserId], references: [id], onDelete: Cascade)
+  city          City?              @relation(fields: [cityId], references: [id], onDelete: SetNull)
   collaborators TripCollaborator[]
   items         TripItem[]
   bookings      Booking[]
@@ -67,14 +67,14 @@ model TripCollaborator {
   role     CollaboratorRole @default(VIEWER)
   joinedAt DateTime         @default(now())
 
-  trip     Trip @relation(fields: [tripId], references: [id], onDelete: Cascade)
-  user     User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trip Trip @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([tripId, userId])
 }
 
 model TripItem {
-  id       String   @id @default(uuid())
+  id       String    @id @default(uuid())
   tripId   String
   day      Int?
   title    String
@@ -83,7 +83,7 @@ model TripItem {
   notes    String?
   type     String?
 
-  trip     Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  trip Trip @relation(fields: [tripId], references: [id], onDelete: Cascade)
 
   @@index([tripId])
 }
@@ -106,8 +106,8 @@ model Booking {
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @default(now()) @updatedAt
 
-  trip            Trip?         @relation(fields: [tripId], references: [id], onDelete: Cascade)
-  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trip Trip? @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  user User  @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([tripId])
   @@index([userId])

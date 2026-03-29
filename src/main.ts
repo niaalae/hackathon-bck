@@ -13,12 +13,6 @@ async function bootstrap() {
     ? process.env.CORS_ORIGINS.split(',').map((origin) => origin.trim()).filter(Boolean)
     : null
 
-  if (process.env.NODE_ENV !== 'production') {
-    const len = process.env.GROQ_API_KEY ? process.env.GROQ_API_KEY.length : 0
-    // eslint-disable-next-line no-console
-    console.log(`GROQ_API_KEY length: ${len}`)
-  }
-
   app.use(cookieParser())
   app.use(express.json({ limit: '12mb' }))
   app.use(express.urlencoded({ extended: true, limit: '12mb' }))
@@ -38,7 +32,7 @@ async function bootstrap() {
   )
   app.useGlobalFilters(new ApiExceptionFilter())
 
-  await app.listen(process.env.PORT ?? 4001)
+  await app.listen(process.env.PORT ?? 3000)
 }
 
 bootstrap()
