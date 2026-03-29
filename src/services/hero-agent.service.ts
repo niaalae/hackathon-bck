@@ -537,7 +537,7 @@ export class HeroAgentService {
     request: HeroPlannerRequest,
     response: HeroAgentResponse,
   ): string {
-    const duration = Math.max(2, Number(request.durationDays ?? 5));
+    const duration = Math.max(1, Number(request.durationDays ?? 5));
     const destination = request.city?.trim() || response.travelPlan?.to?.city || 'your destination';
     const budgetLine =
       typeof request.budgetDh === 'number' && Number.isFinite(request.budgetDh) && request.budgetDh > 0
@@ -556,7 +556,7 @@ export class HeroAgentService {
     travelPlan: TravelPlan,
   ): TravelPlan {
     const forcedCity = request.city.trim();
-    const forcedDuration = Math.max(2, Number(request.durationDays ?? travelPlan.duration ?? 5));
+    const forcedDuration = Math.max(1, Number(request.durationDays ?? travelPlan.duration ?? 5));
     const forcedBudgetMad =
       typeof request.budgetDh === 'number' && Number.isFinite(request.budgetDh) && request.budgetDh > 0
         ? Math.round(request.budgetDh)
@@ -631,7 +631,7 @@ export class HeroAgentService {
   private buildFallbackPlannerTravelPlan(
     request: HeroPlannerRequest,
   ): TravelPlan {
-    const duration = Math.max(2, Number(request.durationDays ?? 5));
+    const duration = Math.max(1, Number(request.durationDays ?? 5));
     const totalBudgetMad =
       typeof request.budgetDh === 'number' && Number.isFinite(request.budgetDh)
         ? Math.round(request.budgetDh)

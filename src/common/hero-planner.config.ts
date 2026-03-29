@@ -36,7 +36,7 @@ export function buildHeroPlannerPrompt(request: HeroPlannerRequest) {
     Array.isArray(request.interests) && request.interests.length > 0
       ? request.interests.join(', ')
       : 'popular highlights, food, and local culture';
-  const durationDays = Math.max(2, Number(request.durationDays ?? 5));
+  const durationDays = Math.max(1, Number(request.durationDays ?? 5));
   const adults = Math.max(1, Number(request.adults ?? 2));
   const children = Math.max(0, Number(request.children ?? 0));
   const budgetLine =
