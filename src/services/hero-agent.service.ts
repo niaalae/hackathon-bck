@@ -1,5 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { randomInt } from 'crypto';
+import {
+  buildHeroPlannerPrompt,
+  HeroPlannerRequest,
+} from '@/common/hero-planner.config';
+import { PrismaService } from '@/prisma/prisma.service';
 
 type BookingSuggestion = {
   title: string;
@@ -86,6 +91,14 @@ type AgentAction = {
   payload?: Record<string, unknown>;
 };
 
+type PlannerResolvedStop = {
+  title: string;
+  location: string;
+  notes?: string;
+  type: string;
+  time?: Date;
+};
+
 type HistoryMessage = {
   role: 'user' | 'assistant';
   content: string;
@@ -94,6 +107,8 @@ type HistoryMessage = {
 @Injectable()
 export class HeroAgentService {
   private readonly logger = new Logger(HeroAgentService.name);
+  constructor(private readonly prismaService: PrismaService) {}
+
   private get apiKey() {
     return process.env.GROQ_API_KEY ?? '';
   }
@@ -102,6 +117,7 @@ export class HeroAgentService {
     return process.env.GROQ_MODEL ?? 'llama-3.1-8b-instant';
   }
   private readonly endpoint = 'https://api.groq.com/openai/v1/chat/completions';
+  private readonly googlePlacesEndpoint = 'https://places.googleapis.com/v1/places:searchText';
   private readonly moroccoCities = [
     'Fes',
     'Marrakech',
@@ -408,6 +424,231 @@ export class HeroAgentService {
     return actions;
   }
 
+  private buildPlannerAcknowledgement(
+    request: HeroPlannerRequest,
+    response: HeroAgentResponse,
+  ): string {
+    const duration = Math.max(2, Number(request.durationDays ?? 5));
+    const destination = request.city?.trim() || response.travelPlan?.to?.city || 'your destination';
+    const budgetLine =
+      typeof request.budgetDh === 'number' && Number.isFinite(request.budgetDh) && request.budgetDh > 0
+        ? ` around ${Math.round(request.budgetDh)} MAD`
+        : '';
+
+    if (response.travelPlan) {
+      return `Got it. I mapped a ${duration}-day ${destination} trip${budgetLine} and prepared the route for you.`;
+    }
+
+    return `Got it. I saved your ${destination} trip brief${budgetLine} and prepared the next planning step for you.`;
+  }
+
+  private normalizePlannerTravelPlan(
+    request: HeroPlannerRequest,
+    travelPlan: TravelPlan,
+  ): TravelPlan {
+    const forcedCity = request.city.trim();
+    const forcedDuration = Math.max(2, Number(request.durationDays ?? travelPlan.duration ?? 5));
+    const forcedBudgetMad =
+      typeof request.budgetDh === 'number' && Number.isFinite(request.budgetDh) && request.budgetDh > 0
+        ? Math.round(request.budgetDh)
+        : null;
+    const forcedBudgetUsd = forcedBudgetMad ? Math.max(50, Math.round(forcedBudgetMad / 10)) : null;
+
+    const normalizedItinerary = Array.from({ length: forcedDuration }).map((_, index) => {
+      const sourceDay = travelPlan.itinerary?.[index] ?? travelPlan.itinerary?.[travelPlan.itinerary.length - 1];
+      return {
+        day: index + 1,
+        theme: sourceDay?.theme || `Day ${index + 1} in ${forcedCity}`,
+        morning: sourceDay?.morning?.length ? sourceDay.morning : [`🌅 Explore ${forcedCity} in the morning`],
+        afternoon: sourceDay?.afternoon?.length ? sourceDay.afternoon : [`🍽️ Lunch and local discoveries in ${forcedCity}`],
+        evening: sourceDay?.evening?.length ? sourceDay.evening : [`🌙 Slow evening in ${forcedCity}`],
+        estimatedDailyCost:
+          sourceDay?.estimatedDailyCost ??
+          Math.max(45, Math.round((forcedBudgetUsd ?? travelPlan.totalEstimatedCost ?? 300) / forcedDuration)),
+      };
+    });
+
+    return {
+      ...travelPlan,
+      to: {
+        city: forcedCity,
+        country: 'Morocco',
+      },
+      duration: forcedDuration,
+      totalBudget: forcedBudgetUsd ?? travelPlan.totalBudget,
+      hotels: Array.isArray(travelPlan.hotels)
+        ? travelPlan.hotels.map((hotel) => ({
+            ...hotel,
+            location: forcedCity,
+            totalPrice: hotel.pricePerNight * forcedDuration,
+          }))
+        : [],
+      itinerary: normalizedItinerary,
+    };
+  }
+
+  private buildFallbackPlannerTravelPlan(
+    request: HeroPlannerRequest,
+  ): TravelPlan {
+    const duration = Math.max(2, Number(request.durationDays ?? 5));
+    const totalBudgetMad =
+      typeof request.budgetDh === 'number' && Number.isFinite(request.budgetDh)
+        ? Math.round(request.budgetDh)
+        : duration * 1200;
+    const totalBudgetUsd = Math.max(200, Math.round(totalBudgetMad / 10));
+    const interests =
+      request.interests && request.interests.length > 0
+        ? request.interests
+        : ['popular', 'foodie', 'history'];
+
+    const interestPool: Record<string, string[]> = {
+      popular: ['Explore the medina', 'Photograph signature landmarks'],
+      museum: ['Visit a local museum', 'Browse a heritage collection'],
+      nature: ['Walk through a garden', 'Stop at a scenic viewpoint'],
+      foodie: ['Try a top-rated Moroccan lunch', 'Book a rooftop dinner'],
+      history: ['Visit a historic palace', 'Explore a heritage quarter'],
+      shopping: ['Browse artisan souks', 'Stop for handcrafted goods'],
+    };
+
+    const pooledActivities = interests.flatMap(
+      (interest) => interestPool[interest] ?? ['Discover local highlights'],
+    );
+
+    const itinerary: DayPlan[] = Array.from({ length: duration }).map((_, index) => {
+      const base = (index * 3) % Math.max(1, pooledActivities.length);
+      const fallbackMorning = pooledActivities[base] ?? 'Explore a lively local district';
+      const fallbackAfternoon =
+        pooledActivities[(base + 1) % Math.max(1, pooledActivities.length)] ??
+        'Enjoy a relaxed local lunch';
+      const fallbackEvening =
+        pooledActivities[(base + 2) % Math.max(1, pooledActivities.length)] ??
+        'Wrap up with an atmospheric evening stop';
+
+      return {
+        day: index + 1,
+        theme: `Day ${index + 1} in ${request.city}`,
+        morning: [`🌅 ${fallbackMorning}`],
+        afternoon: [`🍽️ ${fallbackAfternoon}`],
+        evening: [`🌙 ${fallbackEvening}`],
+        estimatedDailyCost: Math.max(45, Math.round(totalBudgetUsd / duration)),
+      };
+    });
+
+    const hotelNightly = Math.max(45, Math.round((totalBudgetUsd * 0.35) / duration));
+
+    return {
+      from: { city: 'Flexible', country: 'Unknown' },
+      to: { city: request.city, country: 'Morocco' },
+      duration,
+      totalBudget: totalBudgetUsd,
+      totalEstimatedCost: Math.max(180, Math.round(totalBudgetUsd * 0.92)),
+      budgetMatch: 92,
+      flights: [],
+      hotels: [
+        {
+          name: `Riad stay in ${request.city}`,
+          stars: 4,
+          pricePerNight: hotelNightly,
+          totalPrice: hotelNightly * duration,
+          location: `${request.city}, Morocco`,
+          rating: 4.5,
+          amenities: ['Breakfast', 'Central location', 'Free Wi-Fi'],
+          isRecommended: true,
+        },
+      ],
+      itinerary,
+      budgetBreakdown: {
+        flights: 0,
+        hotels: hotelNightly * duration,
+        food: Math.round(totalBudgetUsd * 0.24),
+        activities: Math.round(totalBudgetUsd * 0.18),
+        transport: Math.round(totalBudgetUsd * 0.08),
+        misc: Math.round(totalBudgetUsd * 0.07),
+      },
+      tips: [
+        'Carry small MAD cash for souks and quick stops.',
+        'Dress comfortably and modestly for long walking days.',
+        'Start early for popular landmarks and medina routes.',
+        'Use bottled water during long sightseeing days.',
+        'Keep one flexible slot each day for spontaneous finds.',
+        'Confirm opening hours the day before major stops.',
+      ],
+      packingList: [
+        'Comfortable walking shoes',
+        'Light layers',
+        'Phone charger',
+        'Power bank',
+        'Water bottle',
+        'Sunscreen',
+        'Sunglasses',
+        'Small day bag',
+        'Travel documents',
+        'Medication',
+        'Hat or cap',
+        'Cash in MAD',
+      ],
+    };
+  }
+
+  private sanitizePlannerBookings(
+    request: HeroPlannerRequest,
+    response: HeroAgentResponse,
+  ): BookingSuggestion[] {
+    const city = request.city?.trim() || response.travelPlan?.to?.city || 'your trip';
+    const fallback: BookingSuggestion[] = [
+      {
+        title: `Flight options for ${city}`,
+        type: 'flight',
+        priceRange: 'Budget to mid-range',
+        notes: 'Shortlisted for the trip brief you approved.',
+      },
+      {
+        title: `Stay shortlist in ${city}`,
+        type: 'stay',
+        priceRange: 'Mid-range',
+        notes: 'Central picks aligned with your trip vibe.',
+      },
+      {
+        title: `Activity picks in ${city}`,
+        type: 'activity',
+        priceRange: 'From $',
+        notes: 'Matched to your route and interests.',
+      },
+    ];
+
+    if (!Array.isArray(response.bookings) || response.bookings.length === 0) {
+      return fallback;
+    }
+
+    return response.bookings.map((booking, index) => {
+      if (
+        booking.title.includes('You are preparing an internal travel-planning br') ||
+        booking.title.toLowerCase().includes('internal travel-planning')
+      ) {
+        return fallback[index] ?? fallback[fallback.length - 1];
+      }
+
+      return booking;
+    });
+  }
+
+  private buildPlannerTripDescription(
+    request: HeroPlannerRequest,
+    response: HeroAgentResponse,
+  ) {
+    const city = response.travelPlan?.to?.city || request.city;
+    const duration = response.travelPlan?.duration || request.durationDays || 5;
+    const budget =
+      typeof request.budgetDh === 'number' && Number.isFinite(request.budgetDh)
+        ? ` around ${Math.round(request.budgetDh)} MAD`
+        : '';
+    const interests = request.interests?.length
+      ? request.interests.slice(0, 3).join(', ')
+      : 'local highlights';
+
+    return `${duration}-day ${city} route curated for ${interests}${budget}.`;
+  }
+
   private shouldShowBookings(
     intent: HeroAgentResponse['intent'],
     prompt: string,
@@ -422,6 +663,181 @@ export class HeroAgentService {
       );
     }
     return false;
+  }
+
+  private get googlePlacesApiKey() {
+    return (
+      process.env.GOOGLE_PLACES_API_KEY ??
+      process.env.VITE_GOOGLE_PLACES_API_KEY ??
+      ''
+    );
+  }
+
+  private normalizePlannerStopTitle(text: string) {
+    return text
+      .replace(/^[^\p{L}\p{N}]+/u, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  private async resolveCityId(cityName: string) {
+    const cities = await this.prismaService.city.findMany({
+      select: { id: true, name: true, slug: true },
+    });
+    const target = cityName.trim().toLowerCase();
+
+    const match = cities.find((city) => {
+      return (
+        city.name.trim().toLowerCase() === target ||
+        city.slug.trim().toLowerCase() === target.replace(/\s+/g, '-')
+      );
+    });
+
+    return match?.id;
+  }
+
+  private async searchPlannerPlace(
+    query: string,
+  ): Promise<PlannerResolvedStop | null> {
+    if (!this.googlePlacesApiKey) return null;
+
+    try {
+      const response = await fetch(this.googlePlacesEndpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Goog-Api-Key': this.googlePlacesApiKey,
+          'X-Goog-FieldMask':
+            'places.displayName,places.formattedAddress,places.primaryTypeDisplayName',
+        },
+        body: JSON.stringify({
+          textQuery: query,
+          languageCode: 'en',
+          regionCode: 'MA',
+          maxResultCount: 1,
+        }),
+      });
+
+      if (!response.ok) return null;
+      const data = await response.json();
+      const place = data?.places?.[0];
+      if (!place?.displayName?.text) return null;
+
+      return {
+        title: String(place.displayName.text),
+        location: String(place.formattedAddress ?? query),
+        notes: undefined,
+        type: String(place.primaryTypeDisplayName?.text ?? 'activity'),
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  private async buildTripItemsFromTravelPlan(
+    request: HeroPlannerRequest,
+    travelPlan: TravelPlan,
+  ) {
+    const items: Array<{
+      day?: number;
+      title: string;
+      location?: string;
+      time?: Date;
+      notes?: string;
+      type?: string;
+    }> = [];
+
+    for (const day of travelPlan.itinerary ?? []) {
+      const sections: Array<{ label: string; entries: string[] }> = [
+        { label: 'Morning', entries: day.morning ?? [] },
+        { label: 'Afternoon', entries: day.afternoon ?? [] },
+        { label: 'Evening', entries: day.evening ?? [] },
+      ];
+      const sectionHours: Record<string, number> = {
+        Morning: 9,
+        Afternoon: 14,
+        Evening: 19,
+      };
+
+      for (const section of sections) {
+        for (const [entryIndex, entry] of section.entries.entries()) {
+          const cleanedTitle = this.normalizePlannerStopTitle(entry);
+          const resolved =
+            (await this.searchPlannerPlace(
+              `${cleanedTitle}, ${request.city}, Morocco`,
+            )) ?? null;
+          const stopTime = new Date();
+          stopTime.setHours(sectionHours[section.label] ?? 9, entryIndex * 15, 0, 0);
+          stopTime.setDate(stopTime.getDate() + Math.max(0, day.day - 1));
+
+          items.push({
+            day: day.day,
+            title: resolved?.title || cleanedTitle,
+            location: resolved?.location || `${request.city}, Morocco`,
+            notes: `${section.label} · ${day.theme}`,
+            type: resolved?.type || 'activity',
+            time: stopTime,
+          });
+        }
+      }
+    }
+
+    return items;
+  }
+
+  private async persistPlannerTrip(
+    request: HeroPlannerRequest,
+    response: HeroAgentResponse,
+  ) {
+    if (!request.ownerUserId || !response.travelPlan) return null;
+
+    const owner = await this.prismaService.user.findUnique({
+      where: { id: request.ownerUserId },
+      select: { id: true },
+    });
+    if (!owner) return null;
+
+    const cityId = await this.resolveCityId(
+      response.travelPlan.to?.city || request.city,
+    );
+    const items = await this.buildTripItemsFromTravelPlan(
+      request,
+      response.travelPlan,
+    );
+
+    const trip = await this.prismaService.trip.create({
+      data: {
+        ownerUserId: request.ownerUserId,
+        title: `${response.travelPlan.to.city} trip`,
+        description: this.buildPlannerTripDescription(request, response),
+        cityId,
+        budgetTotal:
+          typeof request.budgetDh === 'number'
+            ? Number(request.budgetDh)
+            : response.travelPlan.totalBudget,
+        currency: typeof request.budgetDh === 'number' ? 'MAD' : 'USD',
+        items: items.length
+          ? {
+              createMany: {
+                data: items.map((item) => ({
+                  day: item.day,
+                  title: item.title,
+                  location: item.location,
+                  time: item.time,
+                  notes: item.notes,
+                  type: item.type,
+                })),
+              },
+            }
+          : undefined,
+      },
+      include: {
+        city: true,
+        items: true,
+      },
+    });
+
+    return trip;
   }
 
   async generateHeroReply(
@@ -665,5 +1081,59 @@ maxOutputTokens must handle full itinerary.`;
         actions: this.buildActions(inferredIntent, bookings, undefined, cleanPrompt),
       };
     }
+  }
+
+  async generateHeroReplyFromPlanner(
+    request: HeroPlannerRequest,
+  ): Promise<HeroAgentResponse> {
+    const plannerPrompt = buildHeroPlannerPrompt(request);
+    const response = await this.generateHeroReply(plannerPrompt);
+    const normalizedResponse: HeroAgentResponse = {
+      ...response,
+      travelPlan: this.normalizePlannerTravelPlan(
+        request,
+        response.travelPlan ?? this.buildFallbackPlannerTravelPlan(request),
+      ),
+    };
+    const bookings = this.sanitizePlannerBookings(request, normalizedResponse);
+    const persistedTrip = await this.persistPlannerTrip(request, normalizedResponse);
+    const baseActions = this.buildActions(
+      normalizedResponse.intent,
+      bookings,
+      normalizedResponse.travelPlan,
+      request.city,
+    );
+    const actions = persistedTrip
+      ? baseActions.map((action) =>
+          action.type === 'SHOW_TRIPS' || action.type === 'SHOW_MAP'
+            ? {
+                ...action,
+                payload: {
+                  ...action.payload,
+                  tripId: persistedTrip.id,
+                },
+              }
+            : action,
+        )
+      : baseActions;
+    if (
+      persistedTrip &&
+      !actions.some((action) => action.type === 'SHOW_MAP')
+    ) {
+      actions.unshift({
+        type: 'SHOW_MAP',
+        payload: {
+          tripId: persistedTrip.id,
+        },
+      });
+    }
+
+    return {
+      ...normalizedResponse,
+      answer: this.buildPlannerAcknowledgement(request, normalizedResponse),
+      followUpQuestion: null,
+      bookings,
+      actions,
+    };
   }
 }

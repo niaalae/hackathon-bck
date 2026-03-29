@@ -2,6 +2,7 @@ import { Body, Controller, Get, Post, Query } from '@nestjs/common';
 import { HeroAgentService } from '@/services/hero-agent.service';
 import { ChatService } from '@/services/chat.service';
 import { ChatDto } from '../dto/agent/chat.dto';
+import type { HeroPlannerRequest } from '@/common/hero-planner.config';
 
 @Controller('agent')
 export class AgentPublicController {
@@ -26,6 +27,13 @@ export class AgentPublicController {
   @Get('hero')
   async heroGet(@Query('prompt') prompt?: string) {
     return this.heroAgentService.generateHeroReply(typeof prompt === 'string' ? prompt : '');
+  }
+
+  @Post('hero-plan')
+  async heroPlan(@Body() body: unknown) {
+    return this.heroAgentService.generateHeroReplyFromPlanner(
+      (body ?? {}) as HeroPlannerRequest,
+    );
   }
 
   @Post('chat')
